@@ -49,3 +49,4 @@ script:
   - ps -A -o pid,rss,vsz,cmd --sort -rss
   - ps -A -o pid,rss,vsz,cmd --sort -rss | awk '{ sum += $2 } END { print sum / 1024.0, "MB used" }'
   - ps -A -o pid,rss,vsz,cmd --sort -rss | awk '{ sum += $3 } END { print sum / 1024.0, "MB virtual memory used" }'
+
