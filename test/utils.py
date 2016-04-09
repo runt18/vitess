@@ -87,7 +87,7 @@ def main(mod=None, test_options=None):
     test_options - a function which adds OptionParser options that are specific
       to a test file.
   """
-  if mod == None:
+  if mod is None:
     mod = sys.modules['__main__']
 
   global options
