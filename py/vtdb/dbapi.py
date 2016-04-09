@@ -19,7 +19,7 @@ class BindVarsProxy(object):
     return ':%s' % name
 
   def export_bind_vars(self):
-    return dict([(k, self.bind_vars[k]) for k in self.accessed_keys])
+    return {k: self.bind_vars[k] for k in self.accessed_keys}
 
 
 # convert bind style from %(name)s to :name and export only the

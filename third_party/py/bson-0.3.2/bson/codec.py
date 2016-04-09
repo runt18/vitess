@@ -336,5 +336,5 @@ ELEMENT_TYPES = {
 	}
 
 # optimize dispatch once all methods are known
-ELEMENT_DISPATCH = dict([(chr(i), globals()["decode_" + name + "_element"])
-		    for i, name in ELEMENT_TYPES.iteritems()])
+ELEMENT_DISPATCH = {chr(i): globals()["decode_" + name + "_element"]
+		    for i, name in ELEMENT_TYPES.iteritems()}

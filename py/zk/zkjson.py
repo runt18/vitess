@@ -5,9 +5,9 @@ import json
 
 def _default(o):
   if hasattr(o, '_serializable_attributes'):
-    return dict([(k, v)
+    return {k: v
                  for k, v in o.__dict__.iteritems()
-                 if k in o._serializable_attributes])
+                 if k in o._serializable_attributes}
   return o.__dict__
 
 _default_kargs = {'default': _default,
