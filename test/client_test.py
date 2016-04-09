@@ -191,7 +191,9 @@ def _delete_all(keyspace, shard_name, table_name):
   vtgate_conn.commit()
 
 
-def restart_vtgate(extra_args={}):
+def restart_vtgate(extra_args=None):
+  if extra_args is None:
+    extra_args = {}
   global vtgate_server, vtgate_port
   utils.vtgate_kill(vtgate_server)
   vtgate_server, vtgate_port = utils.vtgate_start(vtgate_port, extra_args=extra_args)

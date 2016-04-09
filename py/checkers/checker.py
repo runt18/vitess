@@ -304,8 +304,10 @@ class Checker(object):
   def __init__(self, destination_url, sources_urls, table, directory='.',
                source_column_map=None, source_table_name=None, source_force_index_pk=True,
                destination_force_index_pk=True,
-               keyrange={}, batch_count=0, blocks=1, ratio=1.0, block_size=16384,
+               keyrange=None, batch_count=0, blocks=1, ratio=1.0, block_size=16384,
                logging_level=logging.INFO, stats_interval=1, temp_directory=None, password_map_file=None):
+    if keyrange is None:
+      keyrange = {}
     self.table_name = table
     if source_table_name is None:
       self.source_table_name = self.table_name
