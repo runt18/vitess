@@ -97,14 +97,13 @@ class TestTabletManager(unittest.TestCase):
     # make sure the query service is started right away
     conn = tablet_62344.conn()
     results, rowcount, lastrowid, fields = conn._execute('select * from vt_select_test', {})
-    self.assertEqual(len(results), 4, "expected 4 rows in vt_select_test: %s %s" %
-                     (str(results), str(fields)))
+    self.assertEqual(len(results), 4, "expected 4 rows in vt_select_test: {0!s} {1!s}".format(str(results), str(fields)))
     conn.close()
 
     # make sure direct dba queries work
     query_result = utils.run_vtctl_json(['ExecuteFetchAsDba', '-want_fields', tablet_62344.tablet_alias, 'select * from vt_test_keyspace.vt_select_test'])
-    self.assertEqual(len(query_result['Rows']), 4, "expected 4 rows in vt_select_test: %s" % str(query_result))
-    self.assertEqual(len(query_result['Fields']), 2, "expected 2 fields in vt_select_test: %s" % str(query_result))
+    self.assertEqual(len(query_result['Rows']), 4, "expected 4 rows in vt_select_test: {0!s}".format(str(query_result)))
+    self.assertEqual(len(query_result['Fields']), 2, "expected 2 fields in vt_select_test: {0!s}".format(str(query_result)))
 
     # check Ping / RefreshState
     utils.run_vtctl(['Ping', tablet_62344.tablet_alias])
@@ -161,7 +160,7 @@ class TestTabletManager(unittest.TestCase):
   ) Engine=InnoDB'''
 
   _populate_vt_select_test = [
-      "insert into vt_select_test (msg) values ('test %s')" % x
+      "insert into vt_select_test (msg) values ('test {0!s}')".format(x)
       for x in xrange(4)]
 
 
@@ -206,15 +205,15 @@ class TestTabletManager(unittest.TestCase):
       # make sure they're accounted for properly
       # first the query engine States
       v = utils.get_vars(tablet_62344.port)
-      logging.debug("vars: %s" % str(v))
+      logging.debug("vars: {0!s}".format(str(v)))
 
       # then the Zookeeper connections
       if v['ZkMetaConn']['test_nj']['Current'] != 'Connected':
-        self.fail('invalid zk test_nj state: %s' %
-                  v['ZkMetaConn']['test_nj']['Current'])
+        self.fail('invalid zk test_nj state: {0!s}'.format(
+                  v['ZkMetaConn']['test_nj']['Current']))
       if v['ZkMetaConn']['global']['Current'] != 'Connected':
-        self.fail('invalid zk global state: %s' %
-                  v['ZkMetaConn']['global']['Current'])
+        self.fail('invalid zk global state: {0!s}'.format(
+                  v['ZkMetaConn']['global']['Current']))
       if v['ZkMetaConn']['test_nj']['DurationConnected'] < 10e9:
         self.fail('not enough time in Connected state: %u',
                   v['ZkMetaConn']['test_nj']['DurationConnected'])
@@ -242,7 +241,7 @@ class TestTabletManager(unittest.TestCase):
     conn = tablet_62344.conn(user='ala', password=r'ma kota')
     results, rowcount, lastrowid, fields = conn._execute('select * from vt_select_test', {})
     logging.debug("Got results: %s", str(results))
-    self.assertEqual(len(results), 4, 'got wrong result length: %s' % str(results))
+    self.assertEqual(len(results), 4, 'got wrong result length: {0!s}'.format(str(results)))
     conn.close()
 
     tablet_62344.kill_vttablet()
@@ -347,7 +346,7 @@ class TestTabletManager(unittest.TestCase):
     # make sure the replica is in the replication graph
     before_scrap = utils.run_vtctl_json(['GetShardReplication', 'test_nj',
                                          'test_keyspace/0'])
-    self.assertEqual(2, len(before_scrap['ReplicationLinks']), 'wrong replication links before: %s' % str(before_scrap))
+    self.assertEqual(2, len(before_scrap['ReplicationLinks']), 'wrong replication links before: {0!s}'.format(str(before_scrap)))
 
     # scrap and re-init
     utils.run_vtctl(['ScrapTablet', '-force', tablet_62044.tablet_alias])
@@ -355,7 +354,7 @@ class TestTabletManager(unittest.TestCase):
 
     after_scrap = utils.run_vtctl_json(['GetShardReplication', 'test_nj',
                                         'test_keyspace/0'])
-    self.assertEqual(2, len(after_scrap['ReplicationLinks']), 'wrong replication links after: %s' % str(after_scrap))
+    self.assertEqual(2, len(after_scrap['ReplicationLinks']), 'wrong replication links after: {0!s}'.format(str(after_scrap)))
 
     # manually add a bogus entry to the replication graph, and check
     # it is removed by ShardReplicationFix
@@ -364,13 +363,13 @@ class TestTabletManager(unittest.TestCase):
     with_bogus = utils.run_vtctl_json(['GetShardReplication', 'test_nj',
                                         'test_keyspace/0'])
     self.assertEqual(3, len(with_bogus['ReplicationLinks']),
-                     'wrong replication links with bogus: %s' % str(with_bogus))
+                     'wrong replication links with bogus: {0!s}'.format(str(with_bogus)))
     utils.run_vtctl(['ShardReplicationFix', 'test_nj', 'test_keyspace/0'],
                     auto_log=True)
     after_fix = utils.run_vtctl_json(['GetShardReplication', 'test_nj',
                                         'test_keyspace/0'])
     self.assertEqual(2, len(after_scrap['ReplicationLinks']),
-                     'wrong replication links after fix: %s' % str(after_fix))
+                     'wrong replication links after fix: {0!s}'.format(str(after_fix)))
 
   def check_healthz(self, tablet, expected):
     if expected:
@@ -415,7 +414,7 @@ class TestTabletManager(unittest.TestCase):
     # make sure the master is still master
     ti = utils.run_vtctl_json(['GetTablet', tablet_62344.tablet_alias])
     self.assertEqual(ti['Type'], 'master',
-                     "unexpected master type: %s" % ti['Type'])
+                     "unexpected master type: {0!s}".format(ti['Type']))
 
     # stop replication, make sure we go unhealthy.
     tablet_62044.mquery('', 'stop slave')
@@ -465,7 +464,7 @@ class TestTabletManager(unittest.TestCase):
     # the replica was in lameduck for 5 seconds, should have been enough
     # to reset its state to spare
     ti = utils.run_vtctl_json(['GetTablet', tablet_62044.tablet_alias])
-    self.assertEqual(ti['Type'], 'spare', "tablet didn't go to spare while in lameduck mode: %s" % str(ti))
+    self.assertEqual(ti['Type'], 'spare', "tablet didn't go to spare while in lameduck mode: {0!s}".format(str(ti)))
 
   def test_no_mysql_healthcheck(self):
     """This test starts a vttablet with no mysql port, while mysql is down.
@@ -594,7 +593,7 @@ class TestTabletManager(unittest.TestCase):
     tablet_62344.create_db('vt_test_keyspace')
     tablet_62344.init_tablet('master', 'test_keyspace', '0')
     proc1 = tablet_62344.start_vttablet(security_policy="bogus")
-    f = urllib.urlopen('http://localhost:%u/queryz' % int(tablet_62344.port))
+    f = urllib.urlopen('http://localhost:{0:d}/queryz'.format(int(tablet_62344.port)))
     response = f.read()
     f.close()
     self.assertIn('not allowed', response)

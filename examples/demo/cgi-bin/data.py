@@ -41,7 +41,7 @@ def exec_query(cursor, title, query, response):
         }
 
 def capture_log(prefix, port, queries):
-  p = subprocess.Popen(["curl", "-s", "-N", "http://localhost:%d/debug/querylog" % port], stdout=subprocess.PIPE)
+  p = subprocess.Popen(["curl", "-s", "-N", "http://localhost:{0:d}/debug/querylog".format(port)], stdout=subprocess.PIPE)
   def collect():
     for line in iter(p.stdout.readline, ''):
       query = line.split("\t")[10].strip('"')

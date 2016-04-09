@@ -95,7 +95,7 @@ class _GoRpcConn(object):
       self.conn = socket.create_connection((conip, int(conport)), self.socket_timeout)
       if parts.scheme == 'https':
         self.conn = ssl.wrap_socket(self.conn, keyfile=keyfile, certfile=certfile)
-    self.conn.sendall('CONNECT %s HTTP/1.0\n\n' % parts.path)
+    self.conn.sendall('CONNECT {0!s} HTTP/1.0\n\n'.format(parts.path))
     data = ''
     while True:
       try:
@@ -105,7 +105,7 @@ class _GoRpcConn(object):
           continue
         raise
       if not d:
-        raise GoRpcError('Unexpected EOF in handshake to %s:%s %s' % (str(conip), str(conport), parts.path))
+        raise GoRpcError('Unexpected EOF in handshake to {0!s}:{1!s} {2!s}'.format(str(conip), str(conport), parts.path))
       data += d
       if '\n\n' in data:
         return
@@ -229,8 +229,8 @@ class GoRpcClient(object):
       raise ProgrammingError('no request pending')
     if not self.conn:
       raise GoRpcError(
-          '_read_response - closed client: %s' %
-          (time.time() - self.start_time))
+          '_read_response - closed client: {0!s}'.format(
+          (time.time() - self.start_time)))
 
     # get some data if we don't have any so we have somewhere to start
     if self.data is None:

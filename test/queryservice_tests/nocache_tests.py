@@ -168,7 +168,7 @@ class TestNocache(framework.TestCase):
   def test_select_lock(self):
     for lock_mode in ['for update', 'lock in share mode']:
       try:
-        self.env.execute("select * from vtocc_test where intval=2 %s" % lock_mode)
+        self.env.execute("select * from vtocc_test where intval=2 {0!s}".format(lock_mode))
       except dbexceptions.DatabaseError as e:
         self.assertContains(str(e), "error: Disallowed")
       else:
@@ -176,7 +176,7 @@ class TestNocache(framework.TestCase):
 
       # If these throw no exceptions, we're good
       self.env.conn.begin()
-      self.env.execute("select * from vtocc_test where intval=2 %s" % lock_mode)
+      self.env.execute("select * from vtocc_test where intval=2 {0!s}".format(lock_mode))
       self.env.conn.commit()
       # Make sure the row is not locked for read
       self.env.execute("select * from vtocc_test where intval=2")
@@ -546,12 +546,12 @@ class TestNocache(framework.TestCase):
       self.assertEqual(stat["ErrorCount"], errors)
       self.assertTrue(stat["Time"] > 0)
       return
-    self.fail("query %s not found" % query)
+    self.fail("query {0!s} not found".format(query))
 
   def test_sqls(self):
     error_count = self.env.run_cases(nocache_cases.cases)
     if error_count != 0:
-      self.fail("test_execution errors: %d"%(error_count))
+      self.fail("test_execution errors: {0:d}".format((error_count)))
 
   def test_table_acl_no_access(self):
     with self.assertRaisesRegexp(dbexceptions.DatabaseError, '.*table acl error.*'):

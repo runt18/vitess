@@ -102,7 +102,7 @@ class VTGateConnection(object):
     self.logger_object = vtdb_logger.get_logger()
 
   def __str__(self):
-    return '<VTGateConnection %s >' % self.addr
+    return '<VTGateConnection {0!s} >'.format(self.addr)
 
   def dial(self):
     try:

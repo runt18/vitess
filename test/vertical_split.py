@@ -89,11 +89,11 @@ def tearDownModule():
 class TestVerticalSplit(unittest.TestCase):
   def setUp(self):
     self.vtgate_server, self.vtgate_port = utils.vtgate_start(cache_ttl='0s')
-    self.vtgate_client = zkocc.ZkOccConnection("localhost:%u"%self.vtgate_port,
+    self.vtgate_client = zkocc.ZkOccConnection("localhost:{0:d}".format(self.vtgate_port),
                                                "test_nj", 30.0)
     self.vtgate_addrs = None
     if client_type == VTGATE:
-      self.vtgate_addrs = {"vt": ["localhost:%s"%(self.vtgate_port),]}
+      self.vtgate_addrs = {"vt": ["localhost:{0!s}".format((self.vtgate_port)),]}
 
     self.insert_index = 0
     # Lowering the keyspace refresh throttle so things are testable.
@@ -144,7 +144,7 @@ index by_msg (msg)
     cursor = conn.cursor()
     for i in xrange(count):
       conn.begin()
-      cursor.execute("insert into %s (id, msg) values(%u, 'value %u')" % (
+      cursor.execute("insert into {0!s} (id, msg) values({1:d}, 'value {2:d}')".format(
           table, self.insert_index, self.insert_index), {})
       conn.commit()
       self.insert_index += 1
@@ -154,15 +154,12 @@ index by_msg (msg)
   def _check_values(self, tablet, dbname, table, first, count):
     logging.debug("Checking %u values from %s/%s starting at %u", count, dbname,
                   table, first)
-    rows = tablet.mquery(dbname, 'select id, msg from %s where id>=%u order by id limit %u' % (table, first, count))
-    self.assertEqual(count, len(rows), "got wrong number of rows: %u != %u" %
-                     (len(rows), count))
+    rows = tablet.mquery(dbname, 'select id, msg from {0!s} where id>={1:d} order by id limit {2:d}'.format(table, first, count))
+    self.assertEqual(count, len(rows), "got wrong number of rows: {0:d} != {1:d}".format(len(rows), count))
     for i in xrange(count):
-      self.assertEqual(first + i, rows[i][0], "invalid id[%u]: %u != %u" %
-                       (i, first + i, rows[i][0]))
-      self.assertEqual('value %u' % (first + i), rows[i][1],
-                       "invalid msg[%u]: 'value %u' != '%s'" %
-                       (i, first + i, rows[i][1]))
+      self.assertEqual(first + i, rows[i][0], "invalid id[{0:d}]: {1:d} != {2:d}".format(i, first + i, rows[i][0]))
+      self.assertEqual('value {0:d}'.format((first + i)), rows[i][1],
+                       "invalid msg[{0:d}]: 'value {1:d}' != '{2!s}'".format(i, first + i, rows[i][1]))
 
   def _check_values_timeout(self, tablet, dbname, table, first, count,
                             timeout=30):
@@ -185,23 +182,23 @@ index by_msg (msg)
     result = ""
     if 'ServedFrom' in ks and ks['ServedFrom']:
       for served_from in sorted(ks['ServedFrom'].keys()):
-        result += "ServedFrom(%s): %s\n" % (served_from,
+        result += "ServedFrom({0!s}): {1!s}\n".format(served_from,
                                             ks['ServedFrom'][served_from])
     logging.debug("Cell %s keyspace %s has data:\n%s", cell, keyspace, result)
     self.assertEqual(expected, result,
-                     "Mismatch in srv keyspace for cell %s keyspace %s, expected:\n%s\ngot:\n%s" % (
+                     "Mismatch in srv keyspace for cell {0!s} keyspace {1!s}, expected:\n{2!s}\ngot:\n{3!s}".format(
                      cell, keyspace, expected, result))
     self.assertEqual('', ks.get('ShardingColumnName'),
-                     "Got wrong ShardingColumnName in SrvKeyspace: %s" %
-                     str(ks))
+                     "Got wrong ShardingColumnName in SrvKeyspace: {0!s}".format(
+                     str(ks)))
     self.assertEqual('', ks.get('ShardingColumnType'),
-                     "Got wrong ShardingColumnType in SrvKeyspace: %s" %
-                     str(ks))
+                     "Got wrong ShardingColumnType in SrvKeyspace: {0!s}".format(
+                     str(ks)))
 
   def _check_blacklisted_tables(self, tablet, expected):
     status = tablet.get_status()
     if expected:
-      self.assertIn("BlacklistedTables: %s" % " ".join(expected), status)
+      self.assertIn("BlacklistedTables: {0!s}".format(" ".join(expected)), status)
     else:
       self.assertNotIn("BlacklistedTables", status)
 
@@ -212,13 +209,13 @@ index by_msg (msg)
       if expected and "moving.*" in expected:
         # table is blacklisted, should get the error
         try:
-          results, rowcount, lastrowid, fields = conn._execute("select count(1) from %s" % t, {})
+          results, rowcount, lastrowid, fields = conn._execute("select count(1) from {0!s}".format(t), {})
           self.fail("blacklisted query execution worked")
         except dbexceptions.RetryError as e:
-          self.assertTrue(str(e).find("retry: Query disallowed due to rule: enforce blacklisted tables") != -1, "Cannot find the right error message in query for blacklisted table: %s" % e)
+          self.assertTrue(str(e).find("retry: Query disallowed due to rule: enforce blacklisted tables") != -1, "Cannot find the right error message in query for blacklisted table: {0!s}".format(e))
       else:
         # table is not blacklisted, should just work
-        results, rowcount, lastrowid, fields = conn._execute("select count(1) from %s" % t, {})
+        results, rowcount, lastrowid, fields = conn._execute("select count(1) from {0!s}".format(t), {})
         logging.debug("Got %d rows from table %s on tablet %s", results[0][0], t, tablet.tablet_alias)
     conn.close()
 

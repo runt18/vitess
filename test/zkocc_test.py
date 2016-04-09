@@ -62,7 +62,7 @@ class TopoOccTest(unittest.TestCase):
     utils.run_vtctl(['RebuildKeyspaceGraph', 'test_keyspace*'], auto_log=True)
 
     # vtgate API test
-    out, err = utils.run(environment.binary_argstr('zkclient2')+' -server localhost:%u -mode getSrvKeyspaceNames test_nj' % self.vtgate_zk_port, trap_output=True)
+    out, err = utils.run(environment.binary_argstr('zkclient2')+' -server localhost:{0:d} -mode getSrvKeyspaceNames test_nj'.format(self.vtgate_zk_port), trap_output=True)
     self.assertEqual(err, "KeyspaceNames[0] = test_keyspace1\n" +
                           "KeyspaceNames[1] = test_keyspace2\n")
 
@@ -70,18 +70,18 @@ class TopoOccTest(unittest.TestCase):
     utils.run_vtctl('CreateKeyspace test_keyspace')
     t = tablet.Tablet(tablet_uid=1, cell="nj")
     t.init_tablet("master", "test_keyspace", "0")
-    utils.run_vtctl('UpdateTabletAddrs -hostname localhost -ip-addr 127.0.0.1 -mysql-port %s -vts-port %s %s' % (t.mysql_port, t.port + 500, t.tablet_alias))
+    utils.run_vtctl('UpdateTabletAddrs -hostname localhost -ip-addr 127.0.0.1 -mysql-port {0!s} -vts-port {1!s} {2!s}'.format(t.mysql_port, t.port + 500, t.tablet_alias))
     self.rebuild()
 
     # vtgate zk API test
-    out, err = utils.run(environment.binary_argstr('zkclient2')+' -server localhost:%u -mode getSrvKeyspace test_nj test_keyspace' % self.vtgate_zk_port, trap_output=True)
+    out, err = utils.run(environment.binary_argstr('zkclient2')+' -server localhost:{0:d} -mode getSrvKeyspace test_nj test_keyspace'.format(self.vtgate_zk_port), trap_output=True)
     self.assertEqual(err, "Partitions[master] =\n" +
                      "  ShardReferences[0]={Start: , End: }\n" +
                      "Partitions[rdonly] =\n" +
                      "  ShardReferences[0]={Start: , End: }\n" +
                      "Partitions[replica] =\n" +
                      "  ShardReferences[0]={Start: , End: }\n",
-                     "Got wrong content: %s" % err)
+                     "Got wrong content: {0!s}".format(err))
 
   def test_get_end_points(self):
     utils.run_vtctl('CreateKeyspace test_keyspace')
@@ -91,7 +91,7 @@ class TopoOccTest(unittest.TestCase):
     self.rebuild()
 
     # vtgate zk API test
-    out, err = utils.run(environment.binary_argstr('zkclient2')+' -server localhost:%u -mode getEndPoints test_nj test_keyspace 0 master' % self.vtgate_zk_port, trap_output=True)
+    out, err = utils.run(environment.binary_argstr('zkclient2')+' -server localhost:{0:d} -mode getEndPoints test_nj test_keyspace 0 master'.format(self.vtgate_zk_port), trap_output=True)
     self.assertEqual(err, "Entries[0] = 1 localhost\n")
 
 
@@ -120,7 +120,7 @@ class TestTopo(unittest.TestCase):
         extra_args=['-cpu_profile', os.path.join(environment.tmproot,
                                                  'vtgate.pprof')])
     qpser = utils.run_bg(environment.binary_args('zkclient2') + [
-        '-server', 'localhost:%u' % vtgate_port,
+        '-server', 'localhost:{0:d}'.format(vtgate_port),
         '-mode', 'qps',
         '-zkclient_cpu_profile', os.path.join(environment.tmproot, 'zkclient2.pprof'),
         'test_nj', 'test_keyspace'])
@@ -132,7 +132,7 @@ class TestTopo(unittest.TestCase):
     # some checks on performance / stats
     rpcCalls = v['TopoReaderRpcQueryCount']['test_nj']
     if rpcCalls < MIN_QPS * 10:
-      self.fail('QPS is too low: %u < %u' % (rpcCalls / 10, MIN_QPS))
+      self.fail('QPS is too low: {0:d} < {1:d}'.format(rpcCalls / 10, MIN_QPS))
     else:
       logging.debug("Recorded qps: %u", rpcCalls / 10)
     utils.vtgate_kill(vtgate_proc)

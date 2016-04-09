@@ -162,7 +162,7 @@ def db_wrapper(method, **decorator_kwargs):
     write_method = kwargs.get("write_method", False)
     if not issubclass(table_class, DBObjectBase):
       raise dbexceptions.ProgrammingError(
-          "table class '%s' is not inherited from DBObjectBase" % table_class)
+          "table class '{0!s}' is not inherited from DBObjectBase".format(table_class))
 
     # Create the cursor using cursor_method
     cursor_method = pargs[1]
@@ -215,7 +215,7 @@ def execute_batch_read(cursor, query_list, bind_vars_list):
   batch_cursor = create_batch_cursor_from_cursor(cursor)
   for q, bv in zip(query_list, bind_vars_list):
     if is_dml(q):
-      raise dbexceptions.ProgrammingError("Dml %s for read batch cursor." % q)
+      raise dbexceptions.ProgrammingError("Dml {0!s} for read batch cursor.".format(q))
     batch_cursor.execute(q, bv)
 
   batch_cursor.flush()
@@ -256,7 +256,7 @@ def execute_batch_write(cursor, query_list, bind_vars_list):
         "writable batch execute can also execute on one keyspace_id.")
   for q, bv in zip(query_list, bind_vars_list):
     if not is_dml(q):
-      raise dbexceptions.ProgrammingError("query %s is not a dml" % q)
+      raise dbexceptions.ProgrammingError("query {0!s} is not a dml".format(q))
     batch_cursor.execute(q, bv)
 
   batch_cursor.flush()

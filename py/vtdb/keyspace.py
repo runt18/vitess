@@ -60,7 +60,7 @@ class Keyspace(object):
                             shard['KeyRange']['Start'],
                             shard['KeyRange']['End']):
         return shard['Name']
-    raise ValueError('cannot find shard for keyspace_id %s in %s' % (keyspace_id, shards))
+    raise ValueError('cannot find shard for keyspace_id {0!s} in {1!s}'.format(keyspace_id, shards))
 
 
 def _shard_contain_kid(pkid, start, end):

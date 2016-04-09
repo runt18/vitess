@@ -82,8 +82,7 @@ class TestReparent(unittest.TestCase):
   ) Engine=InnoDB'''
 
   def _populate_vt_insert_test(self, master_tablet, index):
-    q = "insert into vt_insert_test(id, msg) values (%d, 'test %d')" % \
-        (index, index)
+    q = "insert into vt_insert_test(id, msg) values ({0:d}, 'test {1:d}')".format(index, index)
     master_tablet.mquery('vt_test_keyspace', q, write=True)
 
   def _check_vt_insert_test(self, tablet, index):
@@ -91,28 +90,27 @@ class TestReparent(unittest.TestCase):
     timeout = 10.0
     while True:
       result = tablet.mquery('vt_test_keyspace',
-                             'select msg from vt_insert_test where id=%d' %
-                             index)
+                             'select msg from vt_insert_test where id={0:d}'.format(
+                             index))
       if len(result) == 1:
         break
-      timeout = utils.wait_step('waiting for replication to catch up on %s' %
-                                tablet.tablet_alias,
+      timeout = utils.wait_step('waiting for replication to catch up on {0!s}'.format(
+                                tablet.tablet_alias),
                                 timeout, sleep_time=0.1)
 
   def _check_db_addr(self, shard, db_type, expected_port, cell='test_nj'):
     ep = utils.run_vtctl_json(['GetEndPoints', cell, 'test_keyspace/' + shard,
                                db_type])
     self.assertEqual(
-        len(ep['entries']), 1, 'Wrong number of entries: %s' % str(ep))
+        len(ep['entries']), 1, 'Wrong number of entries: {0!s}'.format(str(ep)))
     port = ep['entries'][0]['named_port_map']['vt']
     self.assertEqual(port, expected_port,
-                     'Unexpected port: %u != %u from %s' % (port, expected_port,
+                     'Unexpected port: {0:d} != {1:d} from {2!s}'.format(port, expected_port,
                                                             str(ep)))
     host = ep['entries'][0]['host']
     if not host.startswith(utils.hostname):
       self.fail(
-          'Invalid hostname %s was expecting something starting with %s' %
-          (host, utils.hostname))
+          'Invalid hostname {0!s} was expecting something starting with {1!s}'.format(host, utils.hostname))
 
   def test_master_to_spare_state_change_impossible(self):
     utils.run_vtctl(['CreateKeyspace', 'test_keyspace'])
@@ -214,7 +212,7 @@ class TestReparent(unittest.TestCase):
     idle_tablets, _ = utils.run_vtctl(['ListAllTablets', 'test_nj'],
                                       trap_output=True)
     if '0000062344 <null> <null> idle' not in idle_tablets:
-      self.fail('idle tablet not found: %s' % idle_tablets)
+      self.fail('idle tablet not found: {0!s}'.format(idle_tablets))
 
     tablet.kill_tablets([tablet_62044, tablet_41983, tablet_31981])
 
@@ -235,7 +233,7 @@ class TestReparent(unittest.TestCase):
                              wait_for_start=False)
     shard = utils.run_vtctl_json(['GetShard', 'test_keyspace/' + shard_id])
     self.assertEqual(shard['Cells'], ['test_nj'],
-                     'wrong list of cell in Shard: %s' % str(shard['Cells']))
+                     'wrong list of cell in Shard: {0!s}'.format(str(shard['Cells'])))
 
     # Create a few slaves for testing reparenting.
     tablet_62044.init_tablet('replica', 'test_keyspace', shard_id, start=True,
@@ -249,7 +247,7 @@ class TestReparent(unittest.TestCase):
     shard = utils.run_vtctl_json(['GetShard', 'test_keyspace/' + shard_id])
     self.assertEqual(
         shard['Cells'], ['test_nj', 'test_ny'],
-        'wrong list of cell in Shard: %s' % str(shard['Cells']))
+        'wrong list of cell in Shard: {0!s}'.format(str(shard['Cells'])))
 
     # Recompute the shard layout node - until you do that, it might not be
     # valid.
@@ -267,10 +265,10 @@ class TestReparent(unittest.TestCase):
 
     # Verify MasterCell is properly set
     srvShard = utils.run_vtctl_json(['GetSrvShard', 'test_nj',
-                                     'test_keyspace/%s' % (shard_id)])
+                                     'test_keyspace/{0!s}'.format((shard_id))])
     self.assertEqual(srvShard['MasterCell'], 'test_nj')
     srvShard = utils.run_vtctl_json(['GetSrvShard', 'test_ny',
-                                     'test_keyspace/%s' % (shard_id)])
+                                     'test_keyspace/{0!s}'.format((shard_id))])
     self.assertEqual(srvShard['MasterCell'], 'test_nj')
 
     # Perform a graceful reparent operation to another cell.
@@ -283,10 +281,10 @@ class TestReparent(unittest.TestCase):
 
     # Verify MasterCell is set to new cell.
     srvShard = utils.run_vtctl_json(['GetSrvShard', 'test_nj',
-                                     'test_keyspace/%s' % (shard_id)])
+                                     'test_keyspace/{0!s}'.format((shard_id))])
     self.assertEqual(srvShard['MasterCell'], 'test_ny')
     srvShard = utils.run_vtctl_json(['GetSrvShard', 'test_ny',
-                                     'test_keyspace/%s' % (shard_id)])
+                                     'test_keyspace/{0!s}'.format((shard_id))])
     self.assertEqual(srvShard['MasterCell'], 'test_ny')
 
     tablet.kill_tablets([tablet_62344, tablet_62044, tablet_41983,
@@ -314,7 +312,7 @@ class TestReparent(unittest.TestCase):
     if environment.topo_server().flavor() == 'zookeeper':
       shard = utils.run_vtctl_json(['GetShard', 'test_keyspace/' + shard_id])
       self.assertEqual(shard['Cells'], ['test_nj'],
-                       'wrong list of cell in Shard: %s' % str(shard['Cells']))
+                       'wrong list of cell in Shard: {0!s}'.format(str(shard['Cells'])))
 
     # Create a few slaves for testing reparenting.
     tablet_62044.init_tablet('replica', 'test_keyspace', shard_id, start=True,
@@ -328,7 +326,7 @@ class TestReparent(unittest.TestCase):
     if environment.topo_server().flavor() == 'zookeeper':
       shard = utils.run_vtctl_json(['GetShard', 'test_keyspace/' + shard_id])
       self.assertEqual(shard['Cells'], ['test_nj', 'test_ny'],
-                       'wrong list of cell in Shard: %s' % str(shard['Cells']))
+                       'wrong list of cell in Shard: {0!s}'.format(str(shard['Cells'])))
 
     # Recompute the shard layout node - until you do that, it might not be
     # valid.
@@ -347,10 +345,10 @@ class TestReparent(unittest.TestCase):
 
     # Verify MasterCell is set to new cell.
     srvShard = utils.run_vtctl_json(['GetSrvShard', 'test_nj',
-                                     'test_keyspace/%s' % (shard_id)])
+                                     'test_keyspace/{0!s}'.format((shard_id))])
     self.assertEqual(srvShard['MasterCell'], 'test_nj')
     srvShard = utils.run_vtctl_json(['GetSrvShard', 'test_ny',
-                                     'test_keyspace/%s' % (shard_id)])
+                                     'test_keyspace/{0!s}'.format((shard_id))])
     self.assertEqual(srvShard['MasterCell'], 'test_nj')
 
     # Convert two replica to spare. That should leave only one node serving traffic,
@@ -379,10 +377,10 @@ class TestReparent(unittest.TestCase):
 
     # Verify MasterCell is set to new cell.
     srvShard = utils.run_vtctl_json(['GetSrvShard', 'test_nj',
-                                     'test_keyspace/%s' % (shard_id)])
+                                     'test_keyspace/{0!s}'.format((shard_id))])
     self.assertEqual(srvShard['MasterCell'], 'test_nj')
     srvShard = utils.run_vtctl_json(['GetSrvShard', 'test_ny',
-                                     'test_keyspace/%s' % (shard_id)])
+                                     'test_keyspace/{0!s}'.format((shard_id))])
     self.assertEqual(srvShard['MasterCell'], 'test_nj')
 
     tablet.kill_tablets([tablet_62344, tablet_62044, tablet_41983,
@@ -570,7 +568,7 @@ class TestReparent(unittest.TestCase):
     if not brutal:
       expected_links['test_nj-62344'] = True
     self.assertEqual(expected_links, hashed_links,
-                     'Got unexpected links: %s != %s' % (str(expected_links),
+                     'Got unexpected links: {0!s} != {1!s}'.format(str(expected_links),
                                                          str(hashed_links)))
 
     tablet_62044_master_status = tablet_62044.get_status()

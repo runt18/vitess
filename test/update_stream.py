@@ -26,7 +26,7 @@ from mysql_flavor import mysql_flavor
 
 master_tablet = tablet.Tablet()
 replica_tablet = tablet.Tablet()
-master_host = 'localhost:%u' % master_tablet.port
+master_host = 'localhost:{0:d}'.format(master_tablet.port)
 
 vtgate_server = None
 vtgate_port = None
@@ -140,17 +140,16 @@ def tearDownModule():
 
 class TestUpdateStream(unittest.TestCase):
   _populate_vt_insert_test = [
-      "insert into vt_insert_test (msg) values ('test %s')" % x
+      "insert into vt_insert_test (msg) values ('test {0!s}')".format(x)
       for x in xrange(4)]
 
   def _populate_vt_a(self, count):
-    return ['insert into vt_a (eid, id) values (%d, %d)' % (x, x)
+    return ['insert into vt_a (eid, id) values ({0:d}, {1:d})'.format(x, x)
             for x in xrange(count + 1) if x > 0]
 
   def _populate_vt_b(self, count):
     return [
-        "insert into vt_b (eid, name, foo) values (%d, 'name %s', 'foo %s')" %
-        (x, x, x) for x in xrange(count)]
+        "insert into vt_b (eid, name, foo) values ({0:d}, 'name {1!s}', 'foo {2!s}')".format(x, x, x) for x in xrange(count)]
 
   def setUp(self):
     self.vtgate_client = zkocc.ZkOccConnection(vtgate_socket_file,
@@ -164,8 +163,8 @@ class TestUpdateStream(unittest.TestCase):
     return update_stream_service.UpdateStreamConnection(master_host, 30)
 
   def _get_replica_stream_conn(self):
-    return update_stream_service.UpdateStreamConnection('localhost:%u' %
-                                                        replica_tablet.port, 30)
+    return update_stream_service.UpdateStreamConnection('localhost:{0:d}'.format(
+                                                        replica_tablet.port), 30)
 
   def _test_service_disabled(self):
     start_position = _get_repl_current_position()
@@ -189,8 +188,8 @@ class TestUpdateStream(unittest.TestCase):
 
     v = utils.get_vars(replica_tablet.port)
     if v['UpdateStreamState'] != 'Disabled':
-      self.fail("Update stream service should be 'Disabled' but is '%s'" %
-                v['UpdateStreamState'])
+      self.fail("Update stream service should be 'Disabled' but is '{0!s}'".format(
+                v['UpdateStreamState']))
 
   def perform_writes(self, count):
     for i in xrange(count):
@@ -218,14 +217,13 @@ class TestUpdateStream(unittest.TestCase):
           logging.debug('Test Service Enabled: Pass')
           break
     except Exception, e:
-      self.fail('Exception in getting stream from replica: %s\n Traceback %s' %
-                (str(e), traceback.print_exc()))
+      self.fail('Exception in getting stream from replica: {0!s}\n Traceback {1!s}'.format(str(e), traceback.print_exc()))
     thd.join(timeout=30)
 
     v = utils.get_vars(replica_tablet.port)
     if v['UpdateStreamState'] != 'Enabled':
-      self.fail("Update stream service should be 'Enabled' but is '%s'" %
-                v['UpdateStreamState'])
+      self.fail("Update stream service should be 'Enabled' but is '{0!s}'".format(
+                v['UpdateStreamState']))
     self.assertTrue('DML' in v['UpdateStreamEvents'])
     self.assertTrue('POS' in v['UpdateStreamEvents'])
 
@@ -253,7 +251,7 @@ class TestUpdateStream(unittest.TestCase):
     except Exception, e:
       logging.error('Exception: %s', str(e))
       logging.error('Traceback: %s', traceback.print_exc())
-      self.fail("Update stream returned error '%s'" % str(e))
+      self.fail("Update stream returned error '{0!s}'".format(str(e)))
     logging.debug('Streamed %d transactions before exiting', txn_count)
 
   def _vtdb_conn(self, host):
@@ -265,7 +263,7 @@ class TestUpdateStream(unittest.TestCase):
   def _exec_vt_txn(self, query_list=None):
     if not query_list:
       return
-    vtdb_conn = self._vtdb_conn('localhost:%u' % master_tablet.port)
+    vtdb_conn = self._vtdb_conn('localhost:{0:d}'.format(master_tablet.port))
     vtdb_cursor = vtdb_conn.cursor()
     vtdb_conn.begin()
     for q in query_list:
@@ -283,7 +281,7 @@ class TestUpdateStream(unittest.TestCase):
       if master_start_position == replica_start_position:
         break
       timeout = utils.wait_step(
-        "%s == %s" % (master_start_position, replica_start_position),
+        "{0!s} == {1!s}".format(master_start_position, replica_start_position),
         timeout
       )
     logging.debug('run_test_stream_parity starting @ %s',
@@ -325,8 +323,7 @@ class TestUpdateStream(unittest.TestCase):
       replica_data = replica_val
       self.assertEqual(
           master_data, replica_data,
-          "Test failed, data mismatch - master '%s' and replica position '%s'" %
-          (master_data, replica_data))
+          "Test failed, data mismatch - master '{0!s}' and replica position '{1!s}'".format(master_data, replica_data))
     logging.debug('Test Writes: PASS')
 
   def test_ddl(self):

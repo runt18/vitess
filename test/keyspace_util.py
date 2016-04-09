@@ -72,9 +72,9 @@ class TestEnv(object):
     t = tablet.Tablet()
     self.tablets.append(t)
     if tablet_type == "master":
-      key = "%s.%s.%s" %(keyspace, shard, tablet_type)
+      key = "{0!s}.{1!s}.{2!s}".format(keyspace, shard, tablet_type)
     else:
-      key = "%s.%s.%s.%s" %(keyspace, shard, tablet_type, index)
+      key = "{0!s}.{1!s}.{2!s}.{3!s}".format(keyspace, shard, tablet_type, index)
     self.tablet_map[key] = t
     proc = t.init_mysql()
     t.init_tablet(tablet_type, keyspace=keyspace, shard=shard)

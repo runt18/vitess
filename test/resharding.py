@@ -127,13 +127,12 @@ class InsertThread(threading.Thread):
     if keyspace_id_type == keyrange_constants.KIT_BYTES:
       self.str_keyspace_id = base64.b64encode(pack_keyspace_id(keyspace_id))
     else:
-      self.str_keyspace_id = "%u" % keyspace_id
+      self.str_keyspace_id = "{0:d}".format(keyspace_id)
     self.done = False
 
     self.tablet.mquery('vt_test_keyspace', [
         'begin',
-        'insert into timestamps(name, time_milli, keyspace_id) values("%s", %u, 0x%x) /* EMD keyspace_id:%s user_id:%u */' %
-        (self.object_name, long(time.time() * 1000), self.keyspace_id,
+        'insert into timestamps(name, time_milli, keyspace_id) values("{0!s}", {1:d}, 0x{2:x}) /* EMD keyspace_id:{3!s} user_id:{4:d} */'.format(self.object_name, long(time.time() * 1000), self.keyspace_id,
          self.str_keyspace_id, self.user_id),
         'commit'
         ], write=True, user='vt_app')
@@ -144,7 +143,7 @@ class InsertThread(threading.Thread):
       while not self.done:
         self.tablet.mquery('vt_test_keyspace', [
             'begin',
-            'update timestamps set time_milli=%u where name="%s" /* EMD keyspace_id:%s user_id:%u */' % (long(time.time() * 1000), self.object_name, self.str_keyspace_id, self.user_id),
+            'update timestamps set time_milli={0:d} where name="{1!s}" /* EMD keyspace_id:{2!s} user_id:{3:d} */'.format(long(time.time() * 1000), self.object_name, self.str_keyspace_id, self.user_id),
             'commit'
             ], write=True, user='vt_app')
         time.sleep(0.2)
@@ -170,7 +169,7 @@ class MonitorLagThread(threading.Thread):
   def run(self):
     try:
       while not self.done:
-        result = self.tablet.mquery('vt_test_keyspace', 'select time_milli from timestamps where name="%s"' % self.object_name)
+        result = self.tablet.mquery('vt_test_keyspace', 'select time_milli from timestamps where name="{0!s}"'.format(self.object_name))
         if result:
           lag = long(time.time() * 1000) - long(result[0][0])
           logging.debug("MonitorLagThread(%s) got %u", self.object_name, lag)
@@ -238,15 +237,15 @@ primary key (name)
     if keyspace_id_type == keyrange_constants.KIT_BYTES:
       k = base64.b64encode(pack_keyspace_id(keyspace_id))
     else:
-      k = "%u" % keyspace_id
+      k = "{0:d}".format(keyspace_id)
     tablet.mquery('vt_test_keyspace', [
         'begin',
-        'insert into %s(id, msg, keyspace_id) values(%u, "%s", 0x%x) /* EMD keyspace_id:%s user_id:%u */' % (table, id, msg, keyspace_id, k, id),
+        'insert into {0!s}(id, msg, keyspace_id) values({1:d}, "{2!s}", 0x{3:x}) /* EMD keyspace_id:{4!s} user_id:{5:d} */'.format(table, id, msg, keyspace_id, k, id),
         'commit'
         ], write=True)
 
   def _get_value(self, tablet, table, id):
-    return tablet.mquery('vt_test_keyspace', 'select id, msg, keyspace_id from %s where id=%u' % (table, id))
+    return tablet.mquery('vt_test_keyspace', 'select id, msg, keyspace_id from {0!s} where id={1:d}'.format(table, id))
 
   def _check_value(self, tablet, table, id, msg, keyspace_id,
                    should_be_here=True):
@@ -335,21 +334,21 @@ primary key (name)
   def _insert_lots(self, count, base=0):
     for i in xrange(count):
       self._insert_value(shard_1_master, 'resharding1', 10000 + base + i,
-                         'msg-range1-%u' % i, 0xA000000000000000 + base + i)
+                         'msg-range1-{0:d}'.format(i), 0xA000000000000000 + base + i)
       self._insert_value(shard_1_master, 'resharding1', 20000 + base + i,
-                         'msg-range2-%u' % i, 0xE000000000000000 + base + i)
+                         'msg-range2-{0:d}'.format(i), 0xE000000000000000 + base + i)
 
   # _check_lots returns how many of the values we have, in percents.
   def _check_lots(self, count, base=0):
     found = 0
     for i in xrange(count):
       if self._is_value_present_and_correct(shard_2_replica2, 'resharding1',
-                                            10000 + base + i, 'msg-range1-%u' %
-                                            i, 0xA000000000000000 + base + i):
+                                            10000 + base + i, 'msg-range1-{0:d}'.format(
+                                            i), 0xA000000000000000 + base + i):
         found += 1
       if self._is_value_present_and_correct(shard_3_replica, 'resharding1',
-                                            20000 + base + i, 'msg-range2-%u' %
-                                            i, 0xE000000000000000 + base + i):
+                                            20000 + base + i, 'msg-range2-{0:d}'.format(
+                                            i), 0xE000000000000000 + base + i):
         found += 1
     percent = found * 100 / count / 2
     logging.debug("I have %u%% of the data", percent)
@@ -361,7 +360,7 @@ primary key (name)
       if value >= threshold:
         return
       if timeout == 0:
-        self.fail("timeout waiting for %u%% of the data" % threshold)
+        self.fail("timeout waiting for {0:d}% of the data".format(threshold))
       logging.debug("sleeping until we get %u%%", threshold)
       time.sleep(1)
       timeout -= 1
@@ -371,10 +370,10 @@ primary key (name)
     found = 0
     for i in xrange(count):
       self._check_value(shard_3_replica, 'resharding1', 10000 + base + i,
-                        'msg-range1-%u' % i, 0xA000000000000000 + base + i,
+                        'msg-range1-{0:d}'.format(i), 0xA000000000000000 + base + i,
                         should_be_here=False)
       self._check_value(shard_2_replica2, 'resharding1', 20000 + base + i,
-                        'msg-range2-%u' % i, 0xE000000000000000 + base + i,
+                        'msg-range2-{0:d}'.format(i), 0xE000000000000000 + base + i,
                         should_be_here=False)
 
   def _check_binlog_server_vars(self, tablet):
@@ -395,12 +394,12 @@ primary key (name)
     if seconds_behind_master_max != 0:
       self.assertTrue(v['BinlogPlayerSecondsBehindMaster'] <
                       seconds_behind_master_max,
-                      'BinlogPlayerSecondsBehindMaster is too high: %u > %u' % (
+                      'BinlogPlayerSecondsBehindMaster is too high: {0:d} > {1:d}'.format(
                           v['BinlogPlayerSecondsBehindMaster'],
                           seconds_behind_master_max))
       self.assertTrue(v['BinlogPlayerSecondsBehindMasterMap']['0'] <
                       seconds_behind_master_max,
-                      'BinlogPlayerSecondsBehindMasterMap is too high: %u > %u' % (
+                      'BinlogPlayerSecondsBehindMasterMap is too high: {0:d} > {1:d}'.format(
                           v['BinlogPlayerSecondsBehindMasterMap']['0'],
                           seconds_behind_master_max))
 
@@ -774,7 +773,7 @@ primary key (name)
     utils.run_vtctl(['RemoveShardCell', 'test_keyspace/80-', 'test_ny'], auto_log=True)
     shard = utils.run_vtctl_json(['GetShard', 'test_keyspace/80-'])
     if shard['Cells']:
-      self.fail("Non-empty Cells record for shard: %s" % str(shard))
+      self.fail("Non-empty Cells record for shard: {0!s}".format(str(shard)))
 
     # delete the original shard
     utils.run_vtctl(['DeleteShard', 'test_keyspace/80-'], auto_log=True)

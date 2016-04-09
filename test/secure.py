@@ -31,7 +31,7 @@ cert_dir = environment.tmproot + "/certs"
 def openssl(cmd):
   result = subprocess.call(["openssl"] + cmd, stderr=utils.devnull)
   if result != 0:
-    raise utils.TestError("OpenSSL command failed: %s" % " ".join(cmd))
+    raise utils.TestError("OpenSSL command failed: {0!s}".format(" ".join(cmd)))
 
 def setUpModule():
   try:
@@ -252,49 +252,49 @@ class TestSecure(unittest.TestCase):
                      shard_0_master.tablet_alias], auto_log=True)
 
     # then get the topology and check it
-    topo_client = zkocc.ZkOccConnection("localhost:%u" % vtgate_port,
+    topo_client = zkocc.ZkOccConnection("localhost:{0:d}".format(vtgate_port),
                                         "test_nj", 30.0)
     topology.read_keyspaces(topo_client)
 
     shard_0_master_addrs = topology.get_host_port_by_name(topo_client, "test_keyspace.0.master:vts")
     if len(shard_0_master_addrs) != 1:
-      self.fail('topology.get_host_port_by_name failed for "test_keyspace.0.master:vts", got: %s' % " ".join(["%s:%u(%s)" % (h, p, str(e)) for (h, p, e) in shard_0_master_addrs]))
+      self.fail('topology.get_host_port_by_name failed for "test_keyspace.0.master:vts", got: {0!s}'.format(" ".join(["{0!s}:{1:d}({2!s})".format(h, p, str(e)) for (h, p, e) in shard_0_master_addrs])))
     if shard_0_master_addrs[0][2] != True:
       self.fail('topology.get_host_port_by_name failed for "test_keyspace.0.master:vts" is not encrypted')
-    logging.debug("shard 0 master addrs: %s", " ".join(["%s:%u(%s)" % (h, p, str(e)) for (h, p, e) in shard_0_master_addrs]))
+    logging.debug("shard 0 master addrs: %s", " ".join(["{0!s}:{1:d}({2!s})".format(h, p, str(e)) for (h, p, e) in shard_0_master_addrs]))
 
     # make sure asking for optionally secure connections works too
     auto_addrs = topology.get_host_port_by_name(topo_client, "test_keyspace.0.master:vt", encrypted=True)
     if auto_addrs != shard_0_master_addrs:
-      self.fail('topology.get_host_port_by_name doesn\'t resolve encrypted addresses properly: %s != %s' % (str(shard_0_master_addrs), str(auto_addrs)))
+      self.fail('topology.get_host_port_by_name doesn\'t resolve encrypted addresses properly: {0!s} != {1!s}'.format(str(shard_0_master_addrs), str(auto_addrs)))
 
     # try to connect with regular client
     try:
-      conn = tablet3.TabletConnection("%s:%u" % (shard_0_master_addrs[0][0], shard_0_master_addrs[0][1]),
+      conn = tablet3.TabletConnection("{0!s}:{1:d}".format(shard_0_master_addrs[0][0], shard_0_master_addrs[0][1]),
                                       "", "test_keyspace", "0", 10.0)
       conn.dial()
       self.fail("No exception raised to secure port")
     except dbexceptions.FatalError as e:
       if not e.args[0][0].startswith('Unexpected EOF in handshake to'):
-        self.fail("Unexpected exception: %s" % str(e))
+        self.fail("Unexpected exception: {0!s}".format(str(e)))
 
     sconn = utils.get_vars(shard_0_master.port)["SecureConnections"]
     if sconn != 0:
-      self.fail("unexpected conns %s" % sconn)
+      self.fail("unexpected conns {0!s}".format(sconn))
 
     # connect to encrypted port
-    conn = tablet3.TabletConnection("%s:%u" % (shard_0_master_addrs[0][0], shard_0_master_addrs[0][1]),
+    conn = tablet3.TabletConnection("{0!s}:{1:d}".format(shard_0_master_addrs[0][0], shard_0_master_addrs[0][1]),
                                     "", "test_keyspace", "0", 5.0, encrypted=True)
     conn.dial()
     (results, rowcount, lastrowid, fields) = conn._execute("select 1 from dual", {})
-    self.assertEqual(results, [(1,),], 'wrong conn._execute output: %s' % str(results))
+    self.assertEqual(results, [(1,),], 'wrong conn._execute output: {0!s}'.format(str(results)))
 
     sconn = utils.get_vars(shard_0_master.port)["SecureConnections"]
     if sconn != 1:
-      self.fail("unexpected conns %s" % sconn)
+      self.fail("unexpected conns {0!s}".format(sconn))
     saccept = utils.get_vars(shard_0_master.port)["SecureAccepts"]
     if saccept == 0:
-      self.fail("unexpected accepts %s" % saccept)
+      self.fail("unexpected accepts {0!s}".format(saccept))
 
     # trigger a time out on a secure connection, see what exception we get
     try:
@@ -312,7 +312,7 @@ class TestSecure(unittest.TestCase):
     # try to connect to vtgate with regular client
     timeout = 2.0
     try:
-      conn = vtgatev2.connect(["localhost:%s" % (gate_secure_port),],
+      conn = vtgatev2.connect(["localhost:{0!s}".format((gate_secure_port)),],
                                timeout)
       self.fail("No exception raised to VTGate secure port")
     except dbexceptions.OperationalError as e:
@@ -321,14 +321,14 @@ class TestSecure(unittest.TestCase):
       self.assertIsInstance(exception_type, dbexceptions.FatalError,
                             "unexpected exception type")
       if not exception_msg.startswith('Unexpected EOF in handshake to'):
-        self.fail("Unexpected exception message: %s" % exception_msg)
+        self.fail("Unexpected exception message: {0!s}".format(exception_msg))
 
     sconn = utils.get_vars(gate_port)["SecureConnections"]
     if sconn != 0:
-      self.fail("unexpected conns %s" % sconn)
+      self.fail("unexpected conns {0!s}".format(sconn))
 
     # connect to vtgate with encrypted port
-    conn = vtgatev2.connect(["localhost:%s" % (gate_secure_port),],
+    conn = vtgatev2.connect(["localhost:{0!s}".format((gate_secure_port)),],
                              timeout, encrypted=True)
     (results, rowcount, lastrowid, fields) = conn._execute(
         "select 1 from dual",
@@ -336,16 +336,16 @@ class TestSecure(unittest.TestCase):
         "test_keyspace",
         "master",
         keyranges=[keyrange.KeyRange(keyrange_constants.NON_PARTIAL_KEYRANGE),])
-    self.assertEqual(rowcount, 1, "want 1, got %d" % (rowcount))
-    self.assertEqual(len(fields), 1, "want 1, got %d" % (len(fields)))
-    self.assertEqual(results, [(1,),], 'wrong conn._execute output: %s' % str(results))
+    self.assertEqual(rowcount, 1, "want 1, got {0:d}".format((rowcount)))
+    self.assertEqual(len(fields), 1, "want 1, got {0:d}".format((len(fields))))
+    self.assertEqual(results, [(1,),], 'wrong conn._execute output: {0!s}'.format(str(results)))
 
     sconn = utils.get_vars(gate_port)["SecureConnections"]
     if sconn != 1:
-      self.fail("unexpected conns %s" % sconn)
+      self.fail("unexpected conns {0!s}".format(sconn))
     saccept = utils.get_vars(gate_port)["SecureAccepts"]
     if saccept == 0:
-      self.fail("unexpected accepts %s" % saccept)
+      self.fail("unexpected accepts {0!s}".format(saccept))
 
     # trigger a time out on a vtgate secure connection, see what exception we get
     try:

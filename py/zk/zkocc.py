@@ -54,7 +54,7 @@ class SimpleZkOccConnection(object):
     try:
       return self.client.call(method, req).reply
     except gorpc.GoRpcError as e:
-      raise ZkOccError('%s %s failed' % (method, req), e)
+      raise ZkOccError('{0!s} {1!s} failed'.format(method, req), e)
 
   # returns a ZkNode, see header
   def get(self, path):
@@ -133,7 +133,7 @@ class ZkOccConnection(object):
         pass
 
     self.simple_conn = None
-    raise ZkOccError("Cannot dial to any server, tried: %s" % addrs)
+    raise ZkOccError("Cannot dial to any server, tried: {0!s}".format(addrs))
 
   def close(self):
     if self.simple_conn:
@@ -153,7 +153,7 @@ class ZkOccConnection(object):
           attempt += 1
           logging.warning('zkocc: %s command failed %u times: %s', client_method, attempt, e)
           if attempt >= self.max_attempts:
-            raise ZkOccError('zkocc %s command failed %u times: %s' % (client_method, attempt, e))
+            raise ZkOccError('zkocc {0!s} command failed {1:d} times: {2!s}'.format(client_method, attempt, e))
 
           # try the next server if there is one, or retry our only server
           self.dial()

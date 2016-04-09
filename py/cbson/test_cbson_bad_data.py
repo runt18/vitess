@@ -39,17 +39,17 @@ class CbsonTest(unittest.TestCase):
 
   def test_random_segfaults(self):
     a = cbson.dumps({"A": [1, 2, 3, 4, 5, "6", u"7", {"C": u"DS"}]})
-    sys.stdout.write("\nQ: %s\n" % (binascii.hexlify(a),))
+    sys.stdout.write("\nQ: {0!s}\n".format(binascii.hexlify(a)))
     for i in range(1000):
       l = [c for c in a]
       l[random.randint(4, len(a)-1)] = chr(random.randint(0, 255))
       try:
         s = "".join(l)
-        sys.stdout.write("s: %s\n" % (binascii.hexlify(s),))
+        sys.stdout.write("s: {0!s}\n".format(binascii.hexlify(s)))
         sys.stdout.flush()
         cbson.loads(s)
       except Exception as e:
-        sys.stdout.write("  ERROR: %r\n" % (e,))
+        sys.stdout.write("  ERROR: {0!r}\n".format(e))
         sys.stdout.flush()
 
 if __name__ == "__main__":

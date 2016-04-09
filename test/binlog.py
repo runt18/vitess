@@ -146,8 +146,8 @@ def tearDownModule():
 
 
 def _get_update_stream(tblt):
-  return update_stream_service.UpdateStreamConnection('localhost:%u' %
-                                                      tblt.port, 30)
+  return update_stream_service.UpdateStreamConnection('localhost:{0:d}'.format(
+                                                      tblt.port), 30)
 
 
 class TestBinlog(unittest.TestCase):

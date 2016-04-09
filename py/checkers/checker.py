@@ -85,17 +85,17 @@ def sql_tuple_comparison(tablename, columns, column_name_prefix=''):
   head = columns[0]
 
   if len(columns) == 1:
-    return '%(tablename)s.%(column)s > %%(%(column_name_prefix)s%(column)s)s' % {
+    return '{tablename!s}.{column!s} > %({column_name_prefix!s}{column!s})s'.format(**{
         'column': head,
         'tablename': tablename,
-        'column_name_prefix': column_name_prefix}
+        'column_name_prefix': column_name_prefix})
 
-  return """%(tablename)s.%(column)s > %%(%(column_name_prefix)s%(column)s)s or
-            (%(tablename)s.%(column)s = %%(%(column_name_prefix)s%(column)s)s and (%(rec)s))""" % {
+  return """{tablename!s}.{column!s} > %({column_name_prefix!s}{column!s})s or
+            ({tablename!s}.{column!s} = %({column_name_prefix!s}{column!s})s and ({rec!s}))""".format(**{
                 'column': head,
                 'rec': sql_tuple_comparison(tablename, columns[1:], column_name_prefix),
                 'tablename': tablename,
-                'column_name_prefix': column_name_prefix}
+                'column_name_prefix': column_name_prefix})
 
 
 def sorted_row_list_difference(expected, actual, key_length):
@@ -237,11 +237,11 @@ class Mismatch(Exception):
   def __str__(self):
     data = []
     if self.missing:
-      data.append("Missing in destination:\n%s" % pprint.pformat(self.missing))
+      data.append("Missing in destination:\n{0!s}".format(pprint.pformat(self.missing)))
     if self.unexpected:
-      data.append("Unexpected in destination:\n%s" % pprint.pformat(self.unexpected))
+      data.append("Unexpected in destination:\n{0!s}".format(pprint.pformat(self.unexpected)))
     if self.different:
-      data.append("Different:\n%s" % '\n'.join(self.dict_diff(*d) for d in self.different))
+      data.append("Different:\n{0!s}".format('\n'.join(self.dict_diff(*d) for d in self.different)))
 
     return '\n'.join(data) + '\n'
 
@@ -283,8 +283,8 @@ class Stats(object):
       except KeyError:
         pass
       else:
-        data = [self.name, "total speed: %0.2f items/s" % (self.local_items / total)]
-        data.extend("\t%s: %0.2f%%" % (k, (v * 100) / total) for k, v in self.local_times.items())
+        data = [self.name, "total speed: {0:0.2f} items/s".format((self.local_items / total))]
+        data.extend("\t{0!s}: {1:0.2f}%".format(k, (v * 100) / total) for k, v in self.local_times.items())
         logging.info('\t'.join(data))
       self.clear_local()
 
@@ -294,8 +294,8 @@ class Stats(object):
     except KeyError:
       logging.info('No stats: no work was necessary.')
     else:
-      data = [self.name, "(FINAL) total speed: %0.2f items/s" % (self.items / total)]
-      data.extend("\t%s: %0.2f%%" % (k, (v * 100) / total) for k, v in self.times.items())
+      data = [self.name, "(FINAL) total speed: {0:0.2f} items/s".format((self.items / total))]
+      data.extend("\t{0!s}: {1:0.2f}%".format(k, (v * 100) / total) for k, v in self.times.items())
       logging.info('\t'.join(data))
 
 
@@ -362,52 +362,52 @@ class Checker(object):
     keyspace_sql_parts = []
     if keyrange.get('start') or keyrange.get('end'):
       if keyrange.get('start'):
-        keyspace_sql_parts.append("keyspace_id >= %s and" % keyrange.get('start'))
+        keyspace_sql_parts.append("keyspace_id >= {0!s} and".format(keyrange.get('start')))
       if keyrange.get('end'):
-        keyspace_sql_parts.append("keyspace_id < %s and" % keyrange.get('end'))
+        keyspace_sql_parts.append("keyspace_id < {0!s} and".format(keyrange.get('end')))
 
     self.destination_sql = """
            select
-             %(columns)s
-           from %(table_name)s %(use_index)s
+             {columns!s}
+           from {table_name!s} {use_index!s}
            where
-             %(range_sql)s
-           order by %(pk_columns)s limit %%(limit)s""" % {
+             {range_sql!s}
+           order by {pk_columns!s} limit %(limit)s""".format(**{
                'table_name': self.table_name,
                'use_index': destination_use_index,
                'columns': ', '.join(self.columns),
                'pk_columns': ', '.join(self.primary_key),
-               'range_sql': sql_tuple_comparison(self.table_name, self.primary_key)}
+               'range_sql': sql_tuple_comparison(self.table_name, self.primary_key)})
 
     # Almost like destination SQL except for the keyspace_sql clause.
     self.last_source_sql = """
            select
-             %(columns)s
-           from %(table_name)s %(use_index)s
-           where %(keyspace_sql)s
-             (%(range_sql)s)
-           order by %(pk_columns)s limit %%(limit)s""" % {
+             {columns!s}
+           from {table_name!s} {use_index!s}
+           where {keyspace_sql!s}
+             ({range_sql!s})
+           order by {pk_columns!s} limit %(limit)s""".format(**{
                'table_name': self.source_table_name,
                'use_index': source_use_index,
                'keyspace_sql': ' '.join(keyspace_sql_parts),
                'columns': ', '.join(self.source_columns),
                'pk_columns': ', '.join(self.source_primary_key),
-               'range_sql': sql_tuple_comparison(self.source_table_name, self.source_primary_key)}
+               'range_sql': sql_tuple_comparison(self.source_table_name, self.source_primary_key)})
 
     self.source_sql = """
            select
-             %(columns)s
-           from %(table_name)s %(use_index)s
-           where %(keyspace_sql)s
-             ((%(min_range_sql)s) and not (%(max_range_sql)s))
-           order by %(pk_columns)s""" % {
+             {columns!s}
+           from {table_name!s} {use_index!s}
+           where {keyspace_sql!s}
+             (({min_range_sql!s}) and not ({max_range_sql!s}))
+           order by {pk_columns!s}""".format(**{
                'table_name': self.source_table_name,
                'use_index': source_use_index,
                'keyspace_sql': ' '.join(keyspace_sql_parts),
                'columns': ', '.join(self.source_columns),
                'pk_columns': ', '.join(self.source_primary_key),
                'min_range_sql': sql_tuple_comparison(self.source_table_name, self.source_primary_key),
-               'max_range_sql': sql_tuple_comparison(self.source_table_name, self.source_primary_key, column_name_prefix='max_')}
+               'max_range_sql': sql_tuple_comparison(self.source_table_name, self.source_primary_key, column_name_prefix='max_')})
 
     self.stats = Stats(interval=stats_interval, name=self.table_name)
     self.destination = Datastore(parse_database_url(destination_url, password_map), stats=self.stats)

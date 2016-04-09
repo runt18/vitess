@@ -130,7 +130,7 @@ class TestSharded(unittest.TestCase):
     # make sure the '1' value was written on first shard
     rows = shard_0_master.mquery('vt_test_keyspace', "select id, msg from vt_select_test order by id")
     self.assertEqual(rows, ((1, 'test 1'), ),
-                     'wrong mysql_query output: %s' % str(rows))
+                     'wrong mysql_query output: {0!s}'.format(str(rows)))
 
     utils.pause("After db writes")
 
@@ -166,43 +166,43 @@ class TestSharded(unittest.TestCase):
           for sub_path in ['', '.vdns', '/0', '/vt.vdns']:
             expected = '/zk/test_nj/zkns/vt/test_keyspace/' + base + '/' + db_type + sub_path
             if expected not in lines:
-              self.fail('missing zkns part:\n%s\nin:%s' %(expected, out))
+              self.fail('missing zkns part:\n{0!s}\nin:{1!s}'.format(expected, out))
 
     # now try to connect using the python client and shard-aware connection
     # to both shards
     # first get the topology and check it
-    vtgate_client = zkocc.ZkOccConnection("localhost:%u" % vtgate_port,
+    vtgate_client = zkocc.ZkOccConnection("localhost:{0:d}".format(vtgate_port),
                                           "test_nj", 30.0)
     topology.read_keyspaces(vtgate_client)
 
     shard_0_master_addrs = topology.get_host_port_by_name(vtgate_client, "test_keyspace.-80.master:vt")
     if len(shard_0_master_addrs) != 1:
-      self.fail('topology.get_host_port_by_name failed for "test_keyspace.-80.master:vt", got: %s' % " ".join(["%s:%u(%s)" % (h, p, str(e)) for (h, p, e) in shard_0_master_addrs]))
-    logging.debug("shard 0 master addrs: %s", " ".join(["%s:%u(%s)" % (h, p, str(e)) for (h, p, e) in shard_0_master_addrs]))
+      self.fail('topology.get_host_port_by_name failed for "test_keyspace.-80.master:vt", got: {0!s}'.format(" ".join(["{0!s}:{1:d}({2!s})".format(h, p, str(e)) for (h, p, e) in shard_0_master_addrs])))
+    logging.debug("shard 0 master addrs: %s", " ".join(["{0!s}:{1:d}({2!s})".format(h, p, str(e)) for (h, p, e) in shard_0_master_addrs]))
 
     # connect to shard -80
-    conn = tablet3.TabletConnection("%s:%u" % (shard_0_master_addrs[0][0],
+    conn = tablet3.TabletConnection("{0!s}:{1:d}".format(shard_0_master_addrs[0][0],
                                                shard_0_master_addrs[0][1]),
                                     "", "test_keyspace", "-80", 10.0)
     conn.dial()
     (results, rowcount, lastrowid, fields) = conn._execute("select id, msg from vt_select_test order by id", {})
     self.assertEqual(results, [(1, 'test 1'), ],
-                     'wrong conn._execute output: %s' % str(results))
+                     'wrong conn._execute output: {0!s}'.format(str(results)))
 
     # connect to shard 80-
     shard_1_master_addrs = topology.get_host_port_by_name(vtgate_client, "test_keyspace.80-.master:vt")
-    conn = tablet3.TabletConnection("%s:%u" % (shard_1_master_addrs[0][0],
+    conn = tablet3.TabletConnection("{0!s}:{1:d}".format(shard_1_master_addrs[0][0],
                                                shard_1_master_addrs[0][1]),
                                     "", "test_keyspace", "80-", 10.0)
     conn.dial()
     (results, rowcount, lastrowid, fields) = conn._execute("select id, msg from vt_select_test order by id", {})
     self.assertEqual(results, [(10, 'test 10'), ],
-                     'wrong conn._execute output: %s' % str(results))
+                     'wrong conn._execute output: {0!s}'.format(str(results)))
     vtgate_client.close()
 
     # try to connect with bad shard
     try:
-      conn = tablet3.TabletConnection("localhost:%u" % shard_0_master.port,
+      conn = tablet3.TabletConnection("localhost:{0:d}".format(shard_0_master.port),
                                       "", "test_keyspace", "-90", 10.0)
       conn.dial()
       self.fail('expected an exception')
