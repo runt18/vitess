@@ -6,7 +6,7 @@ def main(args):
   print 'HELO\t2'
   if args:
     for arg in args:
-      print "Q\t%s\tIN\tANY\t-1\t1.1.1.1\t1.1.1.2" % arg
+      print "Q\t{0!s}\tIN\tANY\t-1\t1.1.1.1\t1.1.1.2".format(arg)
   else:
     print "Q\ttest.zkns.zk\tIN\tANY\t-1\t1.1.1.1\t1.1.1.2"
 

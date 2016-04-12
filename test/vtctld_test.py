@@ -136,7 +136,7 @@ class TestVtctld(unittest.TestCase):
       line_map[alias] = parts
     for tablet in tablets:
       if not tablet.tablet_alias in line_map:
-         self.assertFalse('tablet %s is not in the result: %s' % (
+         self.assertFalse('tablet {0!s} is not in the result: {1!s}'.format(
                           tablet.tablet_alias, str(line_map)))
 
   def test_vtctl(self):
@@ -169,7 +169,7 @@ class TestVtctld(unittest.TestCase):
     self.assertEqual(len(self.data["Scrap"]), 1)
 
   def test_partial(self):
-    utils.pause("You can now run a browser and connect to http://%s:%u to manually check topology" % (socket.getfqdn(), utils.vtctld.port))
+    utils.pause("You can now run a browser and connect to http://{0!s}:{1:d} to manually check topology".format(socket.getfqdn(), utils.vtctld.port))
     self.assertEqual(self.data["Partial"], True)
 
   def test_explorer_redirects(self):
@@ -178,12 +178,12 @@ class TestVtctld(unittest.TestCase):
                    environment.topo_server().flavor())
       return
 
-    base = 'http://localhost:%u' % utils.vtctld.port
+    base = 'http://localhost:{0:d}'.format(utils.vtctld.port)
     self.assertEqual(urllib2.urlopen(base + '/explorers/redirect?type=keyspace&explorer=zk&keyspace=test_keyspace').geturl(),
                      base + '/zk/global/vt/keyspaces/test_keyspace')
     self.assertEqual(urllib2.urlopen(base + '/explorers/redirect?type=shard&explorer=zk&keyspace=test_keyspace&shard=-80').geturl(),
                      base + '/zk/global/vt/keyspaces/test_keyspace/shards/-80')
-    self.assertEqual(urllib2.urlopen(base + '/explorers/redirect?type=tablet&explorer=zk&alias=%s' % shard_0_replica.tablet_alias).geturl(),
+    self.assertEqual(urllib2.urlopen(base + '/explorers/redirect?type=tablet&explorer=zk&alias={0!s}'.format(shard_0_replica.tablet_alias)).geturl(),
                      base + shard_0_replica.zk_tablet_path)
 
     self.assertEqual(urllib2.urlopen(base + '/explorers/redirect?type=srv_keyspace&explorer=zk&keyspace=test_keyspace&cell=test_nj').geturl(),
@@ -218,7 +218,7 @@ class TestVtctld(unittest.TestCase):
 
   def test_vtgate(self):
     # do a few vtgate topology queries to prime the cache
-    vtgate_client = zkocc.ZkOccConnection("localhost:%u" % vtgate_port,
+    vtgate_client = zkocc.ZkOccConnection("localhost:{0:d}".format(vtgate_port),
                                           "test_nj", 30.0)
     vtgate_client.dial()
     vtgate_client.get_srv_keyspace_names("test_nj")
@@ -230,7 +230,7 @@ class TestVtctld(unittest.TestCase):
     self.assertIn('</html>', status) # end of page
     self.assertIn('/serving_graph/test_nj">test_nj', status) # vtctld link
 
-    utils.pause("You can now run a browser and connect to http://%s:%u%s to manually check vtgate status page" % (socket.getfqdn(), vtgate_port, environment.status_url))
+    utils.pause("You can now run a browser and connect to http://{0!s}:{1:d}{2!s} to manually check vtgate status page".format(socket.getfqdn(), vtgate_port, environment.status_url))
 
 if __name__ == '__main__':
   utils.main()

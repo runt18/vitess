@@ -87,7 +87,7 @@ class TestBackup(unittest.TestCase):
 
   def _insert_master(self, index):
     tablet_master.mquery('vt_test_keyspace',
-                         "insert into vt_insert_test (msg) values ('test %s')" % index, write=True)
+                         "insert into vt_insert_test (msg) values ('test {0!s}')".format(index), write=True)
 
   def test_backup(self):
     """test_backup will:

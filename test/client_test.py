@@ -166,7 +166,7 @@ def get_connection(user=None, password=None):
   global vtgate_port
   timeout = 10.0
   conn = None
-  vtgate_addrs = {"vt": ["localhost:%s" % (vtgate_port),]}
+  vtgate_addrs = {"vt": ["localhost:{0!s}".format((vtgate_port)),]}
   conn = conn_class.connect(vtgate_addrs, timeout,
                             user=user, password=password)
   return conn
@@ -185,7 +185,7 @@ def _delete_all(keyspace, shard_name, table_name):
   # This write is to set up the test with fresh insert
   # and hence performing it directly on the connection.
   vtgate_conn.begin()
-  vtgate_conn._execute("delete from %s" % table_name, {},
+  vtgate_conn._execute("delete from {0!s}".format(table_name), {},
                        keyspace, 'master',
                        keyranges=[get_keyrange(shard_name)])
   vtgate_conn.commit()
@@ -203,14 +203,14 @@ def populate_table():
   cursor = vtgate_conn.cursor(keyspace, 'master', keyranges=[get_keyrange(keyrange_constants.SHARD_ZERO),],writable=True)
   cursor.begin()
   for x in xrange(10):
-    cursor.execute('insert into vt_unsharded (id, msg) values (%s, %s)' % (str(x), 'msg'), {})
+    cursor.execute('insert into vt_unsharded (id, msg) values ({0!s}, {1!s})'.format(str(x), 'msg'), {})
   cursor.commit()
 
 
 class TestUnshardedTable(unittest.TestCase):
 
   def setUp(self):
-    self.vtgate_addrs = {"vt": ["localhost:%s" % (vtgate_port),]}
+    self.vtgate_addrs = {"vt": ["localhost:{0!s}".format((vtgate_port)),]}
     self.dc = database_context.DatabaseContext(self.vtgate_addrs)
     self.all_ids = []
     with database_context.WriteTransaction(self.dc) as context:
@@ -228,7 +228,7 @@ class TestUnshardedTable(unittest.TestCase):
       rows = db_class_unsharded.VtUnsharded.select_by_id(
           context.get_cursor(), id_val)
       expected = 1
-      self.assertEqual(len(rows), expected, "wrong number of rows fetched %d, expected %d" % (len(rows), expected))
+      self.assertEqual(len(rows), expected, "wrong number of rows fetched {0:d}, expected {1:d}".format(len(rows), expected))
       self.assertEqual(rows[0].id, id_val, "wrong row fetched")
 
   def test_update_and_read(self):
@@ -262,14 +262,14 @@ class TestUnshardedTable(unittest.TestCase):
       count = db_class_unsharded.VtUnsharded.get_count(
           context.get_cursor(), msg="test message")
       expected = len(self.all_ids)
-      self.assertEqual(count, expected, "wrong count fetched; expected %d got %d" % (expected, count))
+      self.assertEqual(count, expected, "wrong count fetched; expected {0:d} got {1:d}".format(expected, count))
 
   def test_min_id(self):
     with database_context.ReadFromMaster(self.dc) as context:
       min_id = db_class_unsharded.VtUnsharded.get_min(
           context.get_cursor())
       expected = min(self.all_ids)
-      self.assertEqual(min_id, expected, "wrong min value fetched; expected %d got %d" % (expected, min_id))
+      self.assertEqual(min_id, expected, "wrong min value fetched; expected {0:d} got {1:d}".format(expected, min_id))
 
   def test_max_id(self):
     with database_context.ReadFromMaster(self.dc) as context:
@@ -277,7 +277,7 @@ class TestUnshardedTable(unittest.TestCase):
           context.get_cursor())
       self.all_ids.sort()
       expected = max(self.all_ids)
-      self.assertEqual(max_id, expected, "wrong max value fetched; expected %d got %d" % (expected, max_id))
+      self.assertEqual(max_id, expected, "wrong max value fetched; expected {0:d} got {1:d}".format(expected, max_id))
 
 
 class TestRangeSharded(unittest.TestCase):
@@ -291,11 +291,11 @@ class TestRangeSharded(unittest.TestCase):
       for x in xrange(20):
         # vt_user - EntityRangeSharded; creates username:user_id lookup
         user_id = db_class_sharded.VtUser.insert(context.get_cursor(),
-                                       username="user%s" % x, msg="test message")
+                                       username="user{0!s}".format(x), msg="test message")
         self.user_id_list.append(user_id)
 
         # vt_user_email - RangeSharded; references user_id:keyspace_id hash
-        email = 'user%s@google.com' % x
+        email = 'user{0!s}@google.com'.format(x)
         m = hashlib.md5()
         m.update(email)
         email_hash = m.digest()
@@ -322,7 +322,7 @@ class TestRangeSharded(unittest.TestCase):
 
 
   def setUp(self):
-    self.vtgate_addrs = {"vt": ["localhost:%s" % (vtgate_port),]}
+    self.vtgate_addrs = {"vt": ["localhost:{0!s}".format((vtgate_port)),]}
     self.dc = database_context.DatabaseContext(self.vtgate_addrs)
     self.populate_tables()
 
@@ -403,7 +403,7 @@ class TestRangeSharded(unittest.TestCase):
       self.assertEqual(len(rows), 2, "wrong number of rows fetched")
       got = [row.id for row in rows]
       got.sort()
-      self.assertEqual(user_id_list, got, "wrong rows fetched; expected %s got %s" % (user_id_list, got))
+      self.assertEqual(user_id_list, got, "wrong rows fetched; expected {0!s} got {1!s}".format(user_id_list, got))
 
       username_list = [row.username for row in rows]
       username_list.sort()
@@ -415,7 +415,7 @@ class TestRangeSharded(unittest.TestCase):
       self.assertEqual(len(rows), 2, "wrong number of rows fetched")
       got = [row.username for row in rows]
       got.sort()
-      self.assertEqual(username_list, got, "wrong rows fetched; expected %s got %s" % (username_list, got))
+      self.assertEqual(username_list, got, "wrong rows fetched; expected {0!s} got {1!s}".format(username_list, got))
 
       where_column_value_pairs = (('user_id', user_id_list),)
       entity_id_map = dict(where_column_value_pairs)
@@ -425,7 +425,7 @@ class TestRangeSharded(unittest.TestCase):
       self.assertEqual(len(rows), 2, "wrong number of rows fetched")
       got = [row.user_id for row in rows]
       got.sort()
-      self.assertEqual(user_id_list, got, "wrong rows fetched; expected %s got %s" % (user_id_list, got))
+      self.assertEqual(user_id_list, got, "wrong rows fetched; expected {0!s} got {1!s}".format(user_id_list, got))
 
       song_id_list = []
       for user_id in user_id_list:
@@ -438,7 +438,7 @@ class TestRangeSharded(unittest.TestCase):
           where_column_value_pairs)
       got = [row.id for row in rows]
       got.sort()
-      self.assertEqual(song_id_list, got, "wrong rows fetched %s got %s" % (song_id_list, got))
+      self.assertEqual(song_id_list, got, "wrong rows fetched {0!s} got {1!s}".format(song_id_list, got))
 
       where_column_value_pairs = [('song_id', song_id_list),]
       entity_id_map = dict(where_column_value_pairs)
@@ -447,7 +447,7 @@ class TestRangeSharded(unittest.TestCase):
           where_column_value_pairs)
       got = [row.song_id for row in rows]
       got.sort()
-      self.assertEqual(song_id_list, got, "wrong rows fetched %s got %s" % (song_id_list, got))
+      self.assertEqual(song_id_list, got, "wrong rows fetched {0!s} got {1!s}".format(song_id_list, got))
 
 
   def test_keyrange_read(self):
@@ -459,7 +459,7 @@ class TestRangeSharded(unittest.TestCase):
           context.get_cursor(keyrange='80-'), where_column_value_pairs)
       fetched_rows = len(rows1) + len(rows2)
       expected = len(self.user_id_list)
-      self.assertEqual(fetched_rows, expected, "wrong number of rows fetched expected:%d got:%d" % (expected, fetched_rows))
+      self.assertEqual(fetched_rows, expected, "wrong number of rows fetched expected:{0:d} got:{1:d}".format(expected, fetched_rows))
 
   def test_scatter_read(self):
     where_column_value_pairs = []
@@ -467,7 +467,7 @@ class TestRangeSharded(unittest.TestCase):
       rows = db_class_sharded.VtUser.select_by_columns(
           context.get_cursor(keyrange=keyrange_constants.NON_PARTIAL_KEYRANGE),
           where_column_value_pairs)
-      self.assertEqual(len(rows), len(self.user_id_list), "wrong number of rows fetched, expecting %d got %d" % (len(self.user_id_list), len(rows)))
+      self.assertEqual(len(rows), len(self.user_id_list), "wrong number of rows fetched, expecting {0:d} got {1:d}".format(len(self.user_id_list), len(rows)))
 
   def test_streaming_read(self):
     where_column_value_pairs = []
@@ -485,7 +485,7 @@ class TestRangeSharded(unittest.TestCase):
       user_id = self.user_id_list[1]
       where_column_value_pairs = [('id', user_id),]
       entity_id_map = {'id': user_id}
-      new_username = 'new_user%s' % user_id
+      new_username = 'new_user{0!s}'.format(user_id)
       update_cols = [('username', new_username),]
       db_class_sharded.VtUser.update_columns(context.get_cursor(entity_id_map=entity_id_map),
                                              where_column_value_pairs,
@@ -500,7 +500,7 @@ class TestRangeSharded(unittest.TestCase):
 
       where_column_value_pairs = [('user_id', user_id),]
       entity_id_map = {'user_id': user_id}
-      new_email = 'new_user%s@google.com' % user_id
+      new_email = 'new_user{0!s}@google.com'.format(user_id)
       m = hashlib.md5()
       m.update(new_email)
       email_hash = m.digest()
@@ -552,7 +552,7 @@ class TestRangeSharded(unittest.TestCase):
           context.get_cursor(keyrange=keyrange_constants.NON_PARTIAL_KEYRANGE),
           msg="test message")
       expected = len(self.user_id_list)
-      self.assertEqual(count, expected, "wrong count fetched; expected %d got %d" % (expected, count))
+      self.assertEqual(count, expected, "wrong count fetched; expected {0:d} got {1:d}".format(expected, count))
 
   def test_min_id(self):
     with database_context.ReadFromMaster(self.dc) as context:
@@ -563,14 +563,14 @@ class TestRangeSharded(unittest.TestCase):
       rows1 = db_class_sharded.VtUser.select_by_columns(
           context.get_cursor(keyrange=keyrange_constants.NON_PARTIAL_KEYRANGE), [])
       id_list = [row.id for row in rows1]
-      self.assertEqual(min_id, expected, "wrong min value fetched; expected %d got %d" % (expected, min_id))
+      self.assertEqual(min_id, expected, "wrong min value fetched; expected {0:d} got {1:d}".format(expected, min_id))
 
   def test_max_id(self):
     with database_context.ReadFromMaster(self.dc) as context:
       max_id = db_class_sharded.VtUser.get_max(
           context.get_cursor(keyrange=keyrange_constants.NON_PARTIAL_KEYRANGE))
       expected = max(self.user_id_list)
-      self.assertEqual(max_id, expected, "wrong max value fetched; expected %d got %d" % (expected, max_id))
+      self.assertEqual(max_id, expected, "wrong max value fetched; expected {0:d} got {1:d}".format(expected, max_id))
 
   def test_batch_read(self):
     # 1. Create select queries using DB classes.
@@ -606,7 +606,7 @@ class TestRangeSharded(unittest.TestCase):
     user_id = self.user_id_list[1]
     where_column_value_pairs = (('id', user_id),)
     entity_id_map = dict(where_column_value_pairs)
-    new_username = 'new_user%s' % user_id
+    new_username = 'new_user{0!s}'.format(user_id)
     update_cols = [('username', new_username),]
     q, bv = db_class_sharded.VtUser.create_update_query(
         where_column_value_pairs, update_column_value_pairs=update_cols)
@@ -614,7 +614,7 @@ class TestRangeSharded(unittest.TestCase):
     bv_list.append(bv)
     # Update VtUserEmail table.
     where_column_value_pairs = [('user_id', user_id),]
-    new_email = 'new_user%s@google.com' % user_id
+    new_email = 'new_user{0!s}@google.com'.format(user_id)
     m = hashlib.md5()
     m.update(new_email)
     email_hash = m.digest()
@@ -645,7 +645,7 @@ class TestRangeSharded(unittest.TestCase):
       self.assertEqual(results[0]['rowcount'], 1, "VtUser update didn't update 1 row")
       self.assertEqual(results[1]['rowcount'], 1, "VtUserEmail update didn't update 1 row")
       self.assertEqual(results[2]['rowcount'], len(self.user_song_map[user_id]),
-                       "VtSong deleted '%d' rows, expected '%d'" % (results[2]['rowcount'], len(self.user_song_map[user_id])))
+                       "VtSong deleted '{0:d}' rows, expected '{1:d}'".format(results[2]['rowcount'], len(self.user_song_map[user_id])))
 
 
 

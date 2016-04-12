@@ -81,7 +81,7 @@ class TabletConnection(object):
     self.logger_object = vtdb_logger.get_logger()
 
   def __str__(self):
-    return '<TabletConnection %s %s %s/%s>' % (self.addr, self.tablet_type, self.keyspace, self.shard)
+    return '<TabletConnection {0!s} {1!s} {2!s}/{3!s}>'.format(self.addr, self.tablet_type, self.keyspace, self.shard)
 
   def dial(self):
     try:

@@ -34,19 +34,19 @@ class KeyRange(codec.BSONCoding):
       else:
         kr = kr.split('-')
     if not isinstance(kr, tuple) and not isinstance(kr, list) or len(kr) != 2:
-      raise dbexceptions.ProgrammingError("keyrange must be a list or tuple or a '-' separated str %s" % kr)
+      raise dbexceptions.ProgrammingError("keyrange must be a list or tuple or a '-' separated str {0!s}".format(kr))
     self.Start = kr[0].strip().decode('hex')
     self.End = kr[1].strip().decode('hex')
 
   def __str__(self):
     if self.Start == keyrange_constants.MIN_KEY and self.End == keyrange_constants.MAX_KEY:
       return keyrange_constants.NON_PARTIAL_KEYRANGE
-    return '%s-%s' % (self.Start.encode('hex'), self.End.encode('hex'))
+    return '{0!s}-{1!s}'.format(self.Start.encode('hex'), self.End.encode('hex'))
 
   def __repr__(self):
     if self.Start == keyrange_constants.MIN_KEY and self.End == keyrange_constants.MAX_KEY:
-      return 'KeyRange(%r)' % keyrange_constants.NON_PARTIAL_KEYRANGE
-    return 'KeyRange(%r-%r)' % (self.Start, self.End)
+      return 'KeyRange({0!r})'.format(keyrange_constants.NON_PARTIAL_KEYRANGE)
+    return 'KeyRange({0!r}-{1!r})'.format(self.Start, self.End)
 
   def bson_encode(self):
     """Bson encode KeyRange.

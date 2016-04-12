@@ -106,7 +106,7 @@ class DBObjectRangeSharded(db_object.DBObjectBase):
 
     # entity_id_map is not None
     if len(entity_id_map) != 1:
-      dbexceptions.ProgrammingError("Invalid entity_id_map '%s'" % entity_id_map)
+      dbexceptions.ProgrammingError("Invalid entity_id_map '{0!s}'".format(entity_id_map))
 
     entity_id_col = entity_id_map.keys()[0]
     entity_id = entity_id_map[entity_id_col]
@@ -118,7 +118,7 @@ class DBObjectRangeSharded(db_object.DBObjectBase):
       # Routing using sharding key.
       routing.sharding_key = entity_id
       if not class_.is_sharding_key_valid(routing.sharding_key):
-        raise dbexceptions.InternalError("Invalid sharding_key %s" % routing.sharding_key)
+        raise dbexceptions.InternalError("Invalid sharding_key {0!s}".format(routing.sharding_key))
     else:
       # Routing using lookup based entity.
       routing.entity_column_name = entity_id_col
@@ -431,7 +431,7 @@ class DBObjectEntityRangeSharded(DBObjectRangeSharded):
     if (not class_.entity_id_lookup_map
         or not isinstance(class_.entity_id_lookup_map, dict)):
       raise dbexceptions.ProgrammingError(
-          "Invalid entity_id_lookup_map %s" % class_.entity_id_lookup_map)
+          "Invalid entity_id_lookup_map {0!s}".format(class_.entity_id_lookup_map))
     entity_col = class_.entity_id_lookup_map.keys()[0]
 
     # Create the lookup entry first

@@ -94,7 +94,7 @@ class VtOCCConnection(object):
       raise
 
   def _connect(self):
-    db_key = "%s.%s.%s" % (self.keyspace, self.shard, self.db_type)
+    db_key = "{0!s}.{1!s}.{2!s}".format(self.keyspace, self.shard, self.db_type)
     db_params_list = get_vt_connection_params_list(self.topo_client,
                                                    self.keyspace,
                                                    self.shard,
@@ -106,7 +106,7 @@ class VtOCCConnection(object):
     if not db_params_list:
       # no valid end-points were found, re-read the keyspace
       self.resolve_topology()
-      raise dbexceptions.OperationalError("empty db params list - no db instance available for key %s" % db_key)
+      raise dbexceptions.OperationalError("empty db params list - no db instance available for key {0!s}".format(db_key))
     db_exception = None
     host_addr = None
     # no retries here, since there is a higher level retry with reconnect.

@@ -16,7 +16,7 @@ class TestCase(unittest.TestCase):
     cls.env = env
 
   def assertContains(self, b, a):
-    self.assertTrue(a in b, "%r not found in %r" % (a, b))
+    self.assertTrue(a in b, "{0!r} not found in {1!r}".format(a, b))
 
 class MultiDict(dict):
   def __getattr__(self, name):
@@ -93,10 +93,10 @@ def execute(cmd, trap_output=False, verbose=False, **kargs):
     kargs['stdout'] = PIPE
     kargs['stderr'] = PIPE
   if verbose:
-    print "Execute:", cmd, ', '.join('%s=%s' % x for x in kargs.iteritems())
+    print "Execute:", cmd, ', '.join('{0!s}={1!s}'.format(*x) for x in kargs.iteritems())
   proc = Popen(args, **kargs)
   proc.args = args
   stdout, stderr = proc.communicate()
   if proc.returncode:
-    raise Exception('FAIL: %s %s %s' % (args, stdout, stderr))
+    raise Exception('FAIL: {0!s} {1!s} {2!s}'.format(args, stdout, stderr))
   return stdout, stderr

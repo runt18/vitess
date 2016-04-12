@@ -42,9 +42,9 @@ class BsonRpcClient(gorpc.GoRpcClient):
     else:
       protocol = 'http'
     if self.user:
-      uri = '%s://%s/_bson_rpc_/auth' % (protocol, self.addr)
+      uri = '{0!s}://{1!s}/_bson_rpc_/auth'.format(protocol, self.addr)
     else:
-      uri = '%s://%s/_bson_rpc_' % (protocol, self.addr)
+      uri = '{0!s}://{1!s}/_bson_rpc_'.format(protocol, self.addr)
     gorpc.GoRpcClient.__init__(self, uri, timeout, keyfile=keyfile, certfile=certfile, socket_file=socket_file)
 
   def dial(self):

@@ -24,7 +24,7 @@ source_tablets = [tablet.Tablet(62044),
 tablets = [destination_tablet] + source_tablets
 
 db_configuration = {
-  "sources": [t.mysql_connection_parameters("test_checkers%i" % i) for i, t in enumerate(source_tablets)],
+  "sources": [t.mysql_connection_parameters("test_checkers{0:d}".format(i)) for i, t in enumerate(source_tablets)],
 }
 
 
@@ -60,10 +60,10 @@ class TestCheckersBase(unittest.TestCase):
                'logging_level': logging.WARNING,
                'directory': tempfile.mkdtemp()}
     default.update(kwargs)
-    source_addresses = ['vt_dba@localhost:%s/test_checkers%s?unix_socket=%s' % (s.mysql_port, i, s.mysql_connection_parameters('test_checkers')['unix_socket'])
+    source_addresses = ['vt_dba@localhost:{0!s}/test_checkers{1!s}?unix_socket={2!s}'.format(s.mysql_port, i, s.mysql_connection_parameters('test_checkers')['unix_socket'])
                         for i, s in enumerate(source_tablets)]
     destination_socket = destination_tablet.mysql_connection_parameters('test_checkers')['unix_socket']
-    return MockChecker('vt_dba@localhost/test_checkers?unix_socket=%s' % destination_socket, source_addresses, destination_table_name, **default)
+    return MockChecker('vt_dba@localhost/test_checkers?unix_socket={0!s}'.format(destination_socket), source_addresses, destination_table_name, **default)
 
 
 class TestSortedRowListDifference(unittest.TestCase):
@@ -88,28 +88,28 @@ class TestCheckers(TestCheckersBase):
     destination_tablet.create_db("test_checkers")
     destination_tablet.mquery("test_checkers", create_table, True)
     for i, t in enumerate(source_tablets):
-      t.create_db("test_checkers%s" % i)
-      t.mquery("test_checkers%s" % i, create_table, True)
+      t.create_db("test_checkers{0!s}".format(i))
+      t.mquery("test_checkers{0!s}".format(i), create_table, True)
 
     destination_queries = []
     source_queries = [[] for t in source_tablets]
     for i in range(1, 400):
-      query = "insert into test (pk1, pk2, pk3, msg, keyspace_id) values (%s, %s, %s, 'message %s', %s)" % (i/100+1, i/10+1, i, i, i)
+      query = "insert into test (pk1, pk2, pk3, msg, keyspace_id) values ({0!s}, {1!s}, {2!s}, 'message {3!s}', {4!s})".format(i/100+1, i/10+1, i, i, i)
       destination_queries.append(query)
       source_queries[i % 2].append(query)
     for i in range(1100, 1110):
-      query = "insert into test (pk1, pk2, pk3, msg, keyspace_id) values (%s, %s, %s, 'message %s', %s)" % (i/100+1, i/10+1, i, i, i)
+      query = "insert into test (pk1, pk2, pk3, msg, keyspace_id) values ({0!s}, {1!s}, {2!s}, 'message {3!s}', {4!s})".format(i/100+1, i/10+1, i, i, i)
       source_queries[0].append(query)
 
     destination_tablet.mquery("test_checkers", destination_queries, write=True)
     for i, (tablet, queries) in enumerate(zip(source_tablets, source_queries)):
-      tablet.mquery("test_checkers%s" % i, queries, write=True)
+      tablet.mquery("test_checkers{0!s}".format(i), queries, write=True)
     self.c = self.make_checker()
 
   def tearDown(self):
     destination_tablet.mquery("test_checkers", "drop table test", True)
     for i, t in enumerate(source_tablets):
-      t.mquery("test_checkers%s" % i, "drop table test", True)
+      t.mquery("test_checkers{0!s}".format(i), "drop table test", True)
 
   def query_all(self, sql, write=False):
     return [t.mquery("test_checkers", sql, write=write) for t in tablets]
@@ -153,17 +153,17 @@ class TestDifferentEncoding(TestCheckersBase):
     destination_tablet.create_db("test_checkers")
     destination_tablet.mquery("test_checkers", create_table + "default character set = utf8", True)
     for i, t in enumerate(source_tablets):
-      t.create_db("test_checkers%s" % i)
-      t.mquery("test_checkers%s" % i, create_table + "default character set = latin2", True)
+      t.create_db("test_checkers{0!s}".format(i))
+      t.mquery("test_checkers{0!s}".format(i), create_table + "default character set = latin2", True)
 
     destination_queries = []
     source_queries = [[] for t in source_tablets]
-    source_connections = [t.connect('test_checkers%s' % i) for i, t in enumerate(source_tablets)]
+    source_connections = [t.connect('test_checkers{0!s}'.format(i)) for i, t in enumerate(source_tablets)]
     for c, _ in source_connections:
       c.set_character_set('latin2')
       c.begin()
     for i in range(1, 400):
-      query = u"insert into test (pk1, pk2, pk3, keyspace_id, msg) values (%s, %s, %s, %s, '\xb1 %s')" % (i/100+1, i/10+1, i, i, i)
+      query = u"insert into test (pk1, pk2, pk3, keyspace_id, msg) values ({0!s}, {1!s}, {2!s}, {3!s}, '\xb1 {4!s}')".format(i/100+1, i/10+1, i, i, i)
       destination_queries.append(query)
       #source_queries[i % 2].append(query.encode('utf-8').decode('iso-8859-2'))
       source_connections[i % 2][1].execute(query.encode('utf-8').decode('iso-8859-2'))
@@ -185,27 +185,27 @@ class TestRlookup(TestCheckersBase):
     destination_tablet.mquery("test_checkers", destination_create_table, True)
 
     for i, t in enumerate(source_tablets):
-      t.create_db("test_checkers%s" % i)
-      t.mquery("test_checkers%s" % i, source_create_table, True)
+      t.create_db("test_checkers{0!s}".format(i))
+      t.mquery("test_checkers{0!s}".format(i), source_create_table, True)
 
     destination_queries = []
     source_queries = [[] for t in source_tablets]
     for i in range(1, 400):
-      destination_queries.append("insert into test_lookup (pk1_lookup, msg_lookup) values (%s, 'message %s')" % (i, i))
-      source_queries[i % 2].append("insert into test (pk1, k2, k3, msg, keyspace_id) values (%s, %s, %s, 'message %s', %s)" % (i, i, i, i, i))
+      destination_queries.append("insert into test_lookup (pk1_lookup, msg_lookup) values ({0!s}, 'message {1!s}')".format(i, i))
+      source_queries[i % 2].append("insert into test (pk1, k2, k3, msg, keyspace_id) values ({0!s}, {1!s}, {2!s}, 'message {3!s}', {4!s})".format(i, i, i, i, i))
     for i in range(1100, 1110):
-      query = "insert into test (pk1, k2, k3, msg, keyspace_id) values (%s, %s, %s, 'message %s', %s)" % (i, i, i, i, i)
+      query = "insert into test (pk1, k2, k3, msg, keyspace_id) values ({0!s}, {1!s}, {2!s}, 'message {3!s}', {4!s})".format(i, i, i, i, i)
       source_queries[0].append(query)
 
     destination_tablet.mquery("test_checkers", destination_queries, write=True)
     for i, (tablet, queries) in enumerate(zip(source_tablets, source_queries)):
-      tablet.mquery("test_checkers%s" % i, queries, write=True)
+      tablet.mquery("test_checkers{0!s}".format(i), queries, write=True)
     self.c = self.make_checker(destination_table_name="test_lookup", source_table_name="test", source_column_map={'pk1_lookup': 'pk1', 'msg_lookup': 'msg'})
 
   def tearDown(self):
     destination_tablet.mquery("test_checkers", "drop table test_lookup", True)
     for i, t in enumerate(source_tablets):
-      t.mquery("test_checkers%s" % i, "drop table test", True)
+      t.mquery("test_checkers{0!s}".format(i), "drop table test", True)
 
   def test_ok(self):
     self.c._run()

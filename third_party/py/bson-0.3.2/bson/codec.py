@@ -27,7 +27,7 @@ unpack_binary_struct = binary_struct.unpack_from
 class MissingClassDefinition(ValueError):
 	def __init__(self, class_name):
 		super(MissingClassDefinition, self).__init__(
-		"No class definition for class %s" % (class_name,))
+		"No class definition for class {0!s}".format(class_name))
 # 
 #  Warning Classes
 class MissingTimezoneWarning(RuntimeWarning):
@@ -108,7 +108,7 @@ def decode_object(raw_values):
 def encode_string(value):
 	value = value.encode("utf8")
 	length = len(value)
-	return struct.pack("<i%dsb" % (length,), length + 1, value, 0)
+	return struct.pack("<i{0:d}sb".format(length), length + 1, value, 0)
 
 def decode_string(data, base):
 	length = unpack_length(data, base)[0]
@@ -204,7 +204,7 @@ def encode_document(obj, traversal_stack,
 		traversal_stack.pop()
 	e_list = buf.getvalue()
 	e_list_length = len(e_list)
-	return struct.pack("<i%dsb" % (e_list_length,), e_list_length + 4 + 1,
+	return struct.pack("<i{0:d}sb".format(e_list_length), e_list_length + 4 + 1,
 			e_list, 0)
 
 def encode_array(array, traversal_stack,
@@ -217,7 +217,7 @@ def encode_array(array, traversal_stack,
 		traversal_stack.pop()
 	e_list = buf.getvalue()
 	e_list_length = len(e_list)
-	return struct.pack("<i%dsb" % (e_list_length,), e_list_length + 4 + 1,
+	return struct.pack("<i{0:d}sb".format(e_list_length), e_list_length + 4 + 1,
 			e_list, 0)
 
 

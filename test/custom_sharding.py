@@ -68,17 +68,17 @@ def tearDownModule():
 class TestCustomSharding(unittest.TestCase):
 
   def _insert_data(self, shard, start, count, table='data'):
-    sql = 'insert into %s(id, name) values (:id, :name)' % table
+    sql = 'insert into {0!s}(id, name) values (:id, :name)'.format(table)
     for x in xrange(count):
       bindvars = {
         'id':   start+x,
-        'name': 'row %u' % (start+x),
+        'name': 'row {0:d}'.format((start+x)),
         }
       utils.vtgate_execute_shard(vtgate_port, sql, 'test_keyspace', shard,
                                  bindvars=bindvars)
 
   def _check_data(self, shard, start, count, table='data'):
-    sql = 'select name from %s where id=:id' % table
+    sql = 'select name from {0!s} where id=:id'.format(table)
     for x in xrange(count):
       bindvars = {
         'id':   start+x,
@@ -89,7 +89,7 @@ class TestCustomSharding(unittest.TestCase):
       # vtctl_json will print the JSON-encoded version of QueryResult,
       # which is a []byte. That translates into a base64-endoded string.
       v = base64.b64decode(qr['Rows'][0][0])
-      self.assertEqual(v, 'row %u' % (start+x))
+      self.assertEqual(v, 'row {0:d}'.format((start+x)))
 
   def test_custom_end_to_end(self):
     """This test case runs through the common operations of a custom
@@ -212,8 +212,8 @@ primary key (id)
     self.assertEqual(len(rows), 20)
     expected = {}
     for i in xrange(10):
-     expected[100+i] = 'row %u' % (100+i)
-     expected[200+i] = 'row %u' % (200+i)
+     expected[100+i] = 'row {0:d}'.format((100+i))
+     expected[200+i] = 'row {0:d}'.format((200+i))
     self.assertEqual(rows, expected)
 
 if __name__ == '__main__':

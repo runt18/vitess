@@ -150,7 +150,7 @@ def get_host_port_by_name(topo_client, db_key, encrypted=False):
     return []
   if 'Entries' not in data:
     vtdb_logger.get_logger().topo_exception('topo server returned: ' + str(data), db_key, e)
-    raise Exception('zkocc returned: %s' % str(data))
+    raise Exception('zkocc returned: {0!s}'.format(str(data)))
   for entry in data['Entries']:
     if service in entry['NamedPortMap']:
       host_port = (entry['Host'], entry['NamedPortMap'][service],

@@ -61,7 +61,7 @@ class TaskKeyrangeMap(object):
     kr_chunks.append('')
     for i in xrange(self.num_tasks):
       kr += span
-      kr_chunks.append('%.2x' % kr)
+      kr_chunks.append('{0:.2x}'.format(kr))
     kr_chunks[-1] = ''
     for i in xrange(len(kr_chunks) - 1):
       start = kr_chunks[i]
@@ -126,7 +126,7 @@ def create_parallel_task_keyrange_map(num_tasks, shard_count):
   """
   if num_tasks % shard_count != 0:
     raise dbexceptions.ProgrammingError(
-        'tasks %d should be multiple of shard_count %d' % (num_tasks,
+        'tasks {0:d} should be multiple of shard_count {1:d}'.format(num_tasks,
                                                            shard_count))
   return TaskKeyrangeMap(num_tasks)
 
@@ -193,7 +193,7 @@ def _create_where_clause_for_keyrange(
   if (not isinstance(key_range, tuple) and not isinstance(key_range, list) or
       len(key_range) != 2):
     raise dbexceptions.ProgrammingError(
-        'key_range must be list or tuple or \'-\' separated str %s' % key_range)
+        'key_range must be list or tuple or \'-\' separated str {0!s}'.format(key_range))
 
   if keyspace_col_type == keyrange_constants.KIT_UINT64:
     return _create_where_clause_for_int_keyspace(key_range, keyspace_col_name)
@@ -201,7 +201,7 @@ def _create_where_clause_for_keyrange(
     return _create_where_clause_for_str_keyspace(key_range, keyspace_col_name)
   else:
     raise dbexceptions.ProgrammingError(
-        'Illegal type for keyspace_col_type %d' % keyspace_col_type)
+        'Illegal type for keyspace_col_type {0:d}'.format(keyspace_col_type))
 
 
 def _create_where_clause_for_str_keyspace(key_range, keyspace_col_name):
@@ -224,15 +224,15 @@ def _create_where_clause_for_str_keyspace(key_range, keyspace_col_name):
   bind_vars = {}
   i = 0
   if kr_min != keyrange_constants.MIN_KEY:
-    bind_name = '%s%d' % (keyspace_col_name, i)
-    where_clause = 'hex(%s) >= ' % keyspace_col_name + '%(' + bind_name + ')s'
+    bind_name = '{0!s}{1:d}'.format(keyspace_col_name, i)
+    where_clause = 'hex({0!s}) >= '.format(keyspace_col_name) + '%(' + bind_name + ')s'
     i += 1
     bind_vars[bind_name] = kr_min
   if kr_max != keyrange_constants.MAX_KEY:
     if where_clause != '':
       where_clause += ' AND '
-    bind_name = '%s%d' % (keyspace_col_name, i)
-    where_clause += 'hex(%s) < ' % keyspace_col_name + '%(' + bind_name + ')s'
+    bind_name = '{0!s}{1:d}'.format(keyspace_col_name, i)
+    where_clause += 'hex({0!s}) < '.format(keyspace_col_name) + '%(' + bind_name + ')s'
     bind_vars[bind_name] = kr_max
   return where_clause, bind_vars
 
@@ -257,14 +257,14 @@ def _create_where_clause_for_int_keyspace(key_range, keyspace_col_name):
   bind_vars = {}
   i = 0
   if kr_min is not None:
-    bind_name = '%s%d' % (keyspace_col_name, i)
-    where_clause = '%s >= ' % keyspace_col_name + '%(' + bind_name + ')s'
+    bind_name = '{0!s}{1:d}'.format(keyspace_col_name, i)
+    where_clause = '{0!s} >= '.format(keyspace_col_name) + '%(' + bind_name + ')s'
     i += 1
     bind_vars[bind_name] = kr_min
   if kr_max is not None:
     if where_clause != '':
       where_clause += ' AND '
-    bind_name = '%s%d' % (keyspace_col_name, i)
-    where_clause += '%s < ' % keyspace_col_name + '%(' + bind_name + ')s'
+    bind_name = '{0!s}{1:d}'.format(keyspace_col_name, i)
+    where_clause += '{0!s} < '.format(keyspace_col_name) + '%(' + bind_name + ')s'
     bind_vars[bind_name] = kr_max
   return where_clause, bind_vars

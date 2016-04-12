@@ -63,7 +63,7 @@ def run_tests(options, args):
   try:
     env.memcache = options.memcache
     env.setUp()
-    print "Starting queryservice_test.py: %s" % options.env
+    print "Starting queryservice_test.py: {0!s}".format(options.env)
     sys.stdout.flush()
     framework.TestCase.setenv(env)
     result = unittest.TextTestRunner(verbosity=options.verbose, failfast=True).run(suite)

@@ -247,7 +247,7 @@ def tearDownModule():
 def get_connection(user=None, password=None):
   global vtgate_port
   timeout = 10.0
-  return vtgatev3.connect("localhost:%s" % (vtgate_port), timeout,
+  return vtgatev3.connect("localhost:{0!s}".format((vtgate_port)), timeout,
                             user=user, password=password)
 
 
@@ -266,7 +266,7 @@ class TestVTGateFunctions(unittest.TestCase):
       cursor.begin()
       cursor.execute(
           "insert into vt_user (name) values (:name)",
-          {'name': 'test %s' % i})
+          {'name': 'test {0!s}'.format(i)})
       self.assertEqual((cursor.fetchall(), cursor.rowcount, cursor.lastrowid, cursor.description), ([], 1L, i, []))
       cursor.commit()
 
@@ -274,7 +274,7 @@ class TestVTGateFunctions(unittest.TestCase):
     for x in xrange(count):
       i = x+1
       cursor.execute("select * from vt_user where id = :id", {'id': i})
-      self.assertEqual((cursor.fetchall(), cursor.rowcount, cursor.lastrowid, cursor.description), ([(i, "test %s" % i)], 1L, 0, [('id', 8L), ('name', 253L)]))
+      self.assertEqual((cursor.fetchall(), cursor.rowcount, cursor.lastrowid, cursor.description), ([(i, "test {0!s}".format(i))], 1L, 0, [('id', 8L), ('name', 253L)]))
 
     # Test insert with no auto-inc, then auto-inc
     vtgate_conn.begin()
@@ -443,14 +443,14 @@ class TestVTGateFunctions(unittest.TestCase):
       vtgate_conn.begin()
       result = vtgate_conn._execute(
           "insert into vt_user_extra (user_id, email) values (:user_id, :email)",
-          {'user_id': i, 'email': 'test %s' % i},
+          {'user_id': i, 'email': 'test {0!s}'.format(i)},
           'master')
       self.assertEqual(result, ([], 1L, 0L, []))
       vtgate_conn.commit()
     for x in xrange(count):
       i = x+1
       result = vtgate_conn._execute("select * from vt_user_extra where user_id = :user_id", {'user_id': i}, 'master')
-      self.assertEqual(result, ([(i, "test %s" % i)], 1L, 0, [('user_id', 8L), ('email', 253L)]))
+      self.assertEqual(result, ([(i, "test {0!s}".format(i))], 1L, 0, [('user_id', 8L), ('email', 253L)]))
     result = shard_0_master.mquery("vt_user", "select * from vt_user_extra")
     self.assertEqual(result, ((1L, 'test 1'), (2L, 'test 2'), (3L, 'test 3')))
     result = shard_1_master.mquery("vt_user", "select * from vt_user_extra")
@@ -499,14 +499,14 @@ class TestVTGateFunctions(unittest.TestCase):
       vtgate_conn.begin()
       result = vtgate_conn._execute(
           "insert into vt_music (user_id, song) values (:user_id, :song)",
-          {'user_id': i, 'song': 'test %s' % i},
+          {'user_id': i, 'song': 'test {0!s}'.format(i)},
           'master')
       self.assertEqual(result, ([], 1L, i, []))
       vtgate_conn.commit()
     for x in xrange(count):
       i = x+1
       result = vtgate_conn._execute("select * from vt_music where id = :id", {'id': i}, 'master')
-      self.assertEqual(result, ([(i, i, "test %s" % i)], 1, 0, [('user_id', 8L), ('id', 8L), ('song', 253L)]))
+      self.assertEqual(result, ([(i, i, "test {0!s}".format(i))], 1, 0, [('user_id', 8L), ('id', 8L), ('song', 253L)]))
     vtgate_conn.begin()
     result = vtgate_conn._execute(
         "insert into vt_music (user_id, id, song) values (:user_id, :id, :song)",

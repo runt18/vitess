@@ -22,10 +22,10 @@ def select_clause(select_columns, table_name, alias=None, cols=None, order_by_co
   """Build the select clause for a query."""
 
   if alias:
-    return 'SELECT %s FROM %s %s' % (
+    return 'SELECT {0!s} FROM {1!s} {2!s}'.format(
         colstr(select_columns, alias, cols, order_by_cols=order_by_cols),
         table_name, alias)
-  return 'SELECT %s FROM %s' % (
+  return 'SELECT {0!s} FROM {1!s}'.format(
         colstr(select_columns, alias, cols, order_by_cols=order_by_cols),
         table_name)
 
@@ -53,7 +53,7 @@ def colstr(select_columns, alias=None, cols=None, bind=None, order_by_cols=None)
       return col.sql()
 
     if alias and '.' not in col:
-      col = '%s.%s' % (alias, col)
+      col = '{0!s}.{1!s}'.format(alias, col)
 
     return col
   return ', '.join([prefix(c) for c in cols if c in bind])
@@ -68,7 +68,7 @@ def build_values_clause(columns, bind_values):
     if (column in ('time_created', 'time_updated') and
         column not in bind_values):
       bind_list.append(column)
-      clause_parts.append('%%(%s)s' % column)
+      clause_parts.append('%({0!s})s'.format(column))
       bind_values[column] = int(time.time())
     elif column in bind_values:
       bind_list.append(column)
@@ -76,7 +76,7 @@ def build_values_clause(columns, bind_values):
         clause_parts.append(bind_values[column])
         bind_values.update(column.bind_vals)
       else:
-        clause_parts.append('%%(%s)s' % column)
+        clause_parts.append('%({0!s})s'.format(column))
   return ', '.join(clause_parts), bind_list
 
 
@@ -89,7 +89,7 @@ def build_in(column, items, alt_name=None, counter=None):
   base = alt_name if alt_name else column
   bind_list = make_bind_list(base, items, counter=counter)
 
-  return ('%s IN (%s)' % (column,
+  return ('{0!s} IN ({1!s})'.format(column,
                           str.join(',', ['%(' + pair[0] + ')s'
                                          for pair in bind_list])),
           dict(bind_list))
@@ -110,7 +110,7 @@ def build_order_clause(order_by):
       subclause = ' '.join(subclause)
     subclause_list.append(subclause)
 
-  return 'ORDER BY %s' % ', '.join(subclause_list)
+  return 'ORDER BY {0!s}'.format(', '.join(subclause_list))
 
 
 def build_group_clause(group_by):
@@ -122,7 +122,7 @@ def build_group_clause(group_by):
   if type(group_by) not in (tuple, list):
     group_by = (group_by,)
 
-  return 'GROUP BY %s' % ', '.join(group_by)
+  return 'GROUP BY {0!s}'.format(', '.join(group_by))
 
 
 def build_limit_clause(limit):
@@ -174,7 +174,7 @@ def build_where_clause(column_value_pairs):
     else:
       bind_name = choose_bind_name(column, counter=counter)
       update_bindvars({bind_name: value})
-      condition_list.append('%s = %%(%s)s' % (column, bind_name))
+      condition_list.append('{0!s} = %({1!s})s'.format(column, bind_name))
 
   if not bind_vars:
     bind_vars = dict(column_value_pairs)
@@ -233,14 +233,13 @@ def update_columns_query(table_name, where_column_value_pairs=None,
       clause_list.append(clause)
       bind_vals.update(clause_bind_vals)
     else:
-      clause_list.append('%s = %%(update_set_%s)s' % (column, i))
-      bind_vals['update_set_%s' % i] = value
+      clause_list.append('{0!s} = %(update_set_{1!s})s'.format(column, i))
+      bind_vals['update_set_{0!s}'.format(i)] = value
 
   if not clause_list:
     # this would be invalid syntax anyway, let's raise a nicer exception
     raise ValueError(
-        'Expected nonempty update_column_value_pairs. Got: %r'
-        % update_column_value_pairs)
+        'Expected nonempty update_column_value_pairs. Got: {0!r}'.format(update_column_value_pairs))
 
   set_clause = ', '.join(clause_list)
 
@@ -248,15 +247,13 @@ def update_columns_query(table_name, where_column_value_pairs=None,
     # same as above. We could allow for no where clause,
     # but this is a notoriously error-prone construct, so, no.
     raise ValueError(
-        'Expected nonempty where_column_value_pairs. Got: %r'
-        % where_column_value_pairs)
+        'Expected nonempty where_column_value_pairs. Got: {0!r}'.format(where_column_value_pairs))
 
   where_clause, where_bind_vals = build_where_clause(where_column_value_pairs)
   bind_vals.update(where_bind_vals)
 
-  query = ('UPDATE %(table)s SET %(set_clause)s WHERE %(where_clause)s'
-           % {'table': table_name, 'set_clause': set_clause,
-              'where_clause': where_clause})
+  query = ('UPDATE {table!s} SET {set_clause!s} WHERE {where_clause!s}'.format(**{'table': table_name, 'set_clause': set_clause,
+              'where_clause': where_clause}))
 
   additional_clause = []
   if order_by:
@@ -277,9 +274,9 @@ def delete_by_columns_query(table_name, where_column_value_pairs=None,
   bind_vars.update(limit_bind_vars)
 
   query = (
-      'DELETE FROM %(table_name)s WHERE %(where_clause)s %(limit_clause)s' %
+      'DELETE FROM {table_name!s} WHERE {where_clause!s} {limit_clause!s}'.format(**
       {'table_name': table_name, 'where_clause': where_clause,
-      'limit_clause': limit_clause})
+      'limit_clause': limit_clause}))
   return query, bind_vars
 
 
@@ -288,7 +285,7 @@ def insert_query(table_name, columns_list, **bind_variables):
                                                  bind_variables)
 
 
-  query = 'INSERT INTO %s (%s) VALUES (%s)' % (table_name,
+  query = 'INSERT INTO {0!s} ({1!s}) VALUES ({2!s})'.format(table_name,
                                                colstr(columns_list,
                                                      bind=bind_list),
                                                values_clause)
@@ -306,13 +303,13 @@ def build_aggregate_query(table_name, id_column_name, sort_func='min'):
 
 def build_count_query(table_name, column_value_pairs):
   where_clause, bind_vars = build_where_clause(column_value_pairs)
-  query = 'SELECT count(1) FROM %s WHERE %s' % (table_name, where_clause)
+  query = 'SELECT count(1) FROM {0!s} WHERE {1!s}'.format(table_name, where_clause)
   return query, bind_vars
 
 
 def choose_bind_name(base, counter=None):
   if counter:
-    base += '_%d' % counter.next()
+    base += '_{0:d}'.format(counter.next())
     return base
 
 def make_bind_list(column, values, counter=None):
@@ -338,7 +335,7 @@ class MySQLFunction(object):
     return self.func
 
   def build_update_sql(self, column):
-    clause = '%s = %s' % (column, self.func)
+    clause = '{0!s} = {1!s}'.format(column, self.func)
     return clause, self.bind_vals
 
 
@@ -349,7 +346,7 @@ class SQLAggregate(object):
     self.column_name = column_name
 
   def sql(self):
-    clause = '%(function_name)s(%(column_name)s)' % vars(self)
+    clause = '{function_name!s}({column_name!s})'.format(**vars(self))
     return clause
 
 
@@ -381,7 +378,7 @@ class NullSafeNotValue(object):
 
   def build_sql(self, column_name, counter=None):
     bind_name = choose_bind_name(column_name, counter=counter)
-    clause = 'NOT %(column_name)s <=> %%(%(bind_name)s)s' % vars()
+    clause = 'NOT {column_name!s} <=> %({bind_name!s})s'.format(**vars())
     bind_vars = {bind_name: self.value}
     return clause, bind_vars
 
@@ -419,7 +416,7 @@ class SQLOperator(object):
 
     bind_name = choose_bind_name(column_name, counter=counter)
 
-    clause = '%(column_name)s %(op)s %%(%(bind_name)s)s' % vars()
+    clause = '{column_name!s} {op!s} %({bind_name!s})s'.format(**vars())
     bind_vars = {bind_name: self.value}
 
     return clause, bind_vars
@@ -432,7 +429,7 @@ class NotValue(SQLOperator):
 
   def build_sql(self, column_name, counter=None):
     if self.value is None:
-      return '%s IS NOT NULL' % column_name, {}
+      return '{0!s} IS NOT NULL'.format(column_name), {}
     return super(NotValue, self).build_sql(column_name, counter=counter)
 
 
@@ -445,7 +442,7 @@ class InValuesOperatorBase(SQLOperator):
     op = self.op
     bind_list = make_bind_list(column_name, self.value, counter=counter)
     in_clause = ', '.join(('%(' + key + ')s') for key, val in bind_list)
-    clause = '%(column_name)s %(op)s (%(in_clause)s)' % vars()
+    clause = '{column_name!s} {op!s} ({in_clause!s})'.format(**vars())
     return clause, dict(bind_list)
 
 
@@ -468,7 +465,7 @@ class InValuesOrNull(InValues):
   def build_sql(self, column_name, counter=None):
     clause, bind_vars = super(InValuesOrNull, self).build_sql(column_name,
                                                               counter=counter)
-    clause = '(%s OR %s IS NULL)' % (clause, column_name)
+    clause = '({0!s} OR {1!s} IS NULL)'.format(clause, column_name)
     return clause, bind_vars
 
 
@@ -484,7 +481,7 @@ class BetweenValues(SQLOperator):
     op = self.op
     bind_list = make_bind_list(column_name, self.value, counter=counter)
     between_clause = ' AND '.join(('%(' + key + ')s') for key, val in bind_list)
-    clause = '%(column_name)s %(op)s %(between_clause)s' % vars()
+    clause = '{column_name!s} {op!s} {between_clause!s}'.format(**vars())
     return clause, dict(bind_list)
 
 
@@ -510,7 +507,7 @@ class OrValues(SQLOperator):
       else:
         bind_name = choose_bind_name(column_name, counter=counter)
         bind_vars[bind_name] = v
-        condition_list.append('%s = %%(%s)s' % (column_name, bind_name))
+        condition_list.append('{0!s} = %({1!s})s'.format(column_name, bind_name))
 
     or_clause = '((' + ') OR ('.join(condition_list) + '))'
     return or_clause, bind_vars
@@ -569,7 +566,7 @@ class Expression(SQLOperator):
   def build_sql(self, column_name, counter=None):
     op = self.op
     value = str(self.value)
-    clause = '%(column_name)s %(op)s %(value)s' % vars()
+    clause = '{column_name!s} {op!s} {value!s}'.format(**vars())
     return clause, {}
 
 
@@ -580,7 +577,7 @@ class IsNullOrEmptyString(SQLOperator):
 
   def build_sql(self, column_name, counter=None):
     # mysql treats '' the same as '   '
-    return "(%s IS NULL OR %s = '')" % (column_name, column_name), {}
+    return "({0!s} IS NULL OR {1!s} = '')".format(column_name, column_name), {}
 
 
 class IsNullValue(SQLOperator):
@@ -589,7 +586,7 @@ class IsNullValue(SQLOperator):
     super(IsNullValue, self).__init__('NULL', 'IS')
 
   def build_sql(self, column_name, counter=None):
-    return '%s IS NULL' % column_name, {}
+    return '{0!s} IS NULL'.format(column_name), {}
 
 
 class IsNotNullValue(SQLOperator):
@@ -598,7 +595,7 @@ class IsNotNullValue(SQLOperator):
     super(IsNotNullValue, self).__init__('NULL', 'IS NOT')
 
   def build_sql(self, column_name, counter=None):
-    return '%s IS NOT NULL' % column_name, {}
+    return '{0!s} IS NOT NULL'.format(column_name), {}
 
 
 class Flag(object):
@@ -615,7 +612,7 @@ class Flag(object):
     self.flags_to_add = flags_present
 
   def __repr__(self):
-    return '%s(flags_present=0x%X, flags_absent=0x%X)' % (
+    return '{0!s}(flags_present=0x{1:X}, flags_absent=0x{2:X})'.format(
         self.__class__.__name__, self.flags_to_add, self.flags_to_remove)
 
   def __or__(self, other):
@@ -637,7 +634,7 @@ class Flag(object):
             and self.flags_to_remove == other.flags_to_remove)
 
   def sql(self, column_name='flags'):
-    return '%s & %s = %s' % (column_name, self.mask, self.value)
+    return '{0!s} & {1!s} = {2!s}'.format(column_name, self.mask, self.value)
 
   def build_sql(self, column_name='flags', counter=None):
     bind_name_mask = choose_bind_name(column_name + '_mask', counter=counter)
@@ -654,7 +651,7 @@ class Flag(object):
     return clause, bind_vars
 
   def update_sql(self, column_name='flags'):
-    return '%s = (%s | %s) & ~%s' % (
+    return '{0!s} = ({1!s} | {2!s}) & ~{3!s}'.format(
         column_name, column_name, self.flags_to_add, self.flags_to_remove)
 
   def build_update_sql(self, column_name='flags'):
@@ -662,8 +659,8 @@ class Flag(object):
               '%%(update_%(column_name)s_add)s) & '
               '~%%(update_%(column_name)s_remove)s') % vars(        )
     bind_vars = {
-        'update_%s_add' % column_name: self.flags_to_add, 'update_%s_remove' %
-        column_name: self.flags_to_remove}
+        'update_{0!s}_add'.format(column_name): self.flags_to_add, 'update_{0!s}_remove'.format(
+        column_name): self.flags_to_remove}
     return clause, bind_vars
 
 
@@ -682,5 +679,5 @@ class Increment(object):
   def build_update_sql(self, column_name):
     clause = ('%(column_name)s = (%(column_name)s + '
               '%%(update_%(column_name)s_amount)s)') % vars()
-    bind_vars = {'update_%s_amount' % column_name: self.amount}
+    bind_vars = {'update_{0!s}_amount'.format(column_name): self.amount}
     return clause, bind_vars

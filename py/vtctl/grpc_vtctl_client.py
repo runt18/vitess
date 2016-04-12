@@ -24,7 +24,7 @@ class GRPCVtctlClient(vtctl_client.VctlClient):
         self.stub = None
 
     def __str__(self):
-        return '<VtctlClient %s>' % self.addr
+        return '<VtctlClient {0!s}>'.format(self.addr)
 
     def dial(self):
         if self.stub:

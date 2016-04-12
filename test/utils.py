@@ -203,13 +203,13 @@ def run(cmd, trap_output=False, raise_on_error=True, **kargs):
   if trap_output:
     kargs['stdout'] = PIPE
     kargs['stderr'] = PIPE
-  logging.debug("run: %s %s", str(cmd), ', '.join('%s=%s' % x for x in kargs.iteritems()))
+  logging.debug("run: %s %s", str(cmd), ', '.join('{0!s}={1!s}'.format(*x) for x in kargs.iteritems()))
   proc = Popen(args, **kargs)
   proc.args = args
   stdout, stderr = proc.communicate()
   if proc.returncode:
     if raise_on_error:
-      pause("cmd fail: %s, pausing..." % (args))
+      pause("cmd fail: {0!s}, pausing...".format((args)))
       raise TestError('cmd fail:', args, stdout, stderr)
     else:
       logging.debug('cmd fail: %s %s %s', str(args), stdout, stderr)
@@ -224,7 +224,7 @@ def run_fail(cmd, **kargs):
   kargs['stdout'] = PIPE
   kargs['stderr'] = PIPE
   if options.verbose == 2:
-    logging.debug("run: (expect fail) %s %s", cmd, ', '.join('%s=%s' % x for x in kargs.iteritems()))
+    logging.debug("run: (expect fail) %s %s", cmd, ', '.join('{0!s}={1!s}'.format(*x) for x in kargs.iteritems()))
   proc = Popen(args, **kargs)
   proc.args = args
   stdout, stderr = proc.communicate()
@@ -236,7 +236,7 @@ def run_fail(cmd, **kargs):
 # run a daemon - kill when this script exits
 def run_bg(cmd, **kargs):
   if options.verbose == 2:
-    logging.debug("run: %s %s", cmd, ', '.join('%s=%s' % x for x in kargs.iteritems()))
+    logging.debug("run: %s %s", cmd, ', '.join('{0!s}={1!s}'.format(*x) for x in kargs.iteritems()))
   if 'extra_env' in kargs:
     kargs['env'] = os.environ.copy()
     if kargs['extra_env']:
@@ -261,7 +261,7 @@ def wait_procs(proc_list, raise_on_error=True):
   for proc in proc_list:
     if proc.returncode:
       if options.verbose >= 1 and proc.returncode not in (-9,):
-        sys.stderr.write("proc failed: %s %s\n" % (proc.returncode, proc.args))
+        sys.stderr.write("proc failed: {0!s} {1!s}\n".format(proc.returncode, proc.args))
       if raise_on_error:
         raise CalledProcessError(proc.returncode, ' '.join(proc.args))
 
@@ -293,9 +293,8 @@ def zk_cat_json(path):
 def wait_step(msg, timeout, sleep_time=1.0):
   timeout -= sleep_time
   if timeout <= 0:
-    raise TestError("timeout waiting for condition '%s'" % msg)
-  logging.debug("Sleeping for %f seconds waiting for condition '%s'" %
-               (sleep_time, msg))
+    raise TestError("timeout waiting for condition '{0!s}'".format(msg))
+  logging.debug("Sleeping for {0:f} seconds waiting for condition '{1!s}'".format(sleep_time, msg))
   time.sleep(sleep_time)
   return timeout
 
@@ -306,7 +305,7 @@ def get_vars(port):
   if we can't get them.
   """
   try:
-    url = 'http://localhost:%u/debug/vars' % int(port)
+    url = 'http://localhost:{0:d}/debug/vars'.format(int(port))
     f = urllib2.urlopen(url)
     data = f.read()
     f.close()
@@ -326,7 +325,7 @@ def wait_for_vars(name, port, var=None):
     v = get_vars(port)
     if v and (var is None or var in v):
       break
-    timeout = wait_step('waiting for /debug/vars of %s' % name, timeout)
+    timeout = wait_step('waiting for /debug/vars of {0!s}'.format(name), timeout)
 
 def poll_for_vars(name, port, condition_msg, timeout=60.0, condition_fn=None, require_vars=False):
   """Polls for debug variables to exist, or match specific conditions, within a timeout.
@@ -358,11 +357,11 @@ def poll_for_vars(name, port, condition_msg, timeout=60.0, condition_fn=None, re
   start_time = time.time()
   while True:
     if (time.time() - start_time) >= timeout:
-      raise TestError('Timed out polling for vars from %s; condition "%s" not met' % (name, condition_msg))
+      raise TestError('Timed out polling for vars from {0!s}; condition "{1!s}" not met'.format(name, condition_msg))
     _vars = get_vars(port)
     if _vars is None:
       if require_vars:
-        raise TestError('Expected vars to exist on %s, but they do not; process probably exited earlier than expected.' % (name,))
+        raise TestError('Expected vars to exist on {0!s}, but they do not; process probably exited earlier than expected.'.format(name))
       continue
     if condition_fn is None:
       return _vars
@@ -385,7 +384,7 @@ def wait_for_tablet_type(tablet_alias, expected_type, timeout=10):
     if run_vtctl_json(['GetTablet', tablet_alias])['Type'] == expected_type:
       break
     timeout = wait_step(
-      "%s's SlaveType to be %s" % (tablet_alias, expected_type),
+      "{0!s}'s SlaveType to be {1!s}".format(tablet_alias, expected_type),
       timeout
     )
 
@@ -401,7 +400,7 @@ def wait_for_replication_pos(tablet_a, tablet_b, timeout=60.0):
     if mysql_flavor().position_at_least(replication_pos_b, replication_pos_a):
       break
     timeout = wait_step(
-      "%s's replication position to catch up %s's; currently at: %s, waiting to catch up to: %s" % (
+      "{0!s}'s replication position to catch up {1!s}'s; currently at: {2!s}, waiting to catch up to: {3!s}".format(
         tablet_b.tablet_alias, tablet_a.tablet_alias, replication_pos_b, replication_pos_a),
       timeout, sleep_time=0.1
     )
@@ -417,7 +416,7 @@ def vtgate_start(vtport=None, cell='test_nj', retry_delay=1, retry_count=2,
   args = environment.binary_args('vtgate') + [
           '-port', str(port),
           '-cell', cell,
-          '-retry-delay', '%ss' % (str(retry_delay)),
+          '-retry-delay', '{0!s}s'.format((str(retry_delay))),
           '-retry-count', str(retry_count),
           '-log_dir', environment.vtlogroot,
           '-srv_topo_cache_ttl', cache_ttl,
@@ -435,7 +434,7 @@ def vtgate_start(vtport=None, cell='test_nj', retry_delay=1, retry_count=2,
     args.extend(['-auth-credentials', os.path.join(environment.vttop, 'test', 'test_data', 'authcredentials_test.json')])
   if cert:
     secure_port = environment.reserve_ports(1)
-    args.extend(['-secure-port', '%s' % secure_port,
+    args.extend(['-secure-port', '{0!s}'.format(secure_port),
                  '-cert', cert,
                  '-key', key])
     if ca_cert:
@@ -465,7 +464,7 @@ def vtgate_vtclient(vtgate_port, sql, tablet_type='master', bindvars=None,
   """vtgate_vtclient uses the vtclient binary to send a query to vtgate.
   """
   args = environment.binary_args('vtclient') + [
-    '-server', 'localhost:%u' % vtgate_port,
+    '-server', 'localhost:{0:d}'.format(vtgate_port),
     '-tablet_type', tablet_type] + protocols_flavor().vtgate_protocol_flags()
   if bindvars:
     args.extend(['-bind_variables', json.dumps(bindvars)])
@@ -483,7 +482,7 @@ def vtgate_execute(vtgate_port, sql, tablet_type='master', bindvars=None):
   """vtgate_execute uses 'vtctl VtGateExecute' to execute a command.
   """
   args = ['VtGateExecute',
-          '-server', 'localhost:%u' % vtgate_port,
+          '-server', 'localhost:{0:d}'.format(vtgate_port),
           '-tablet_type', tablet_type]
   if bindvars:
     args.extend(['-bind_variables', json.dumps(bindvars)])
@@ -494,7 +493,7 @@ def vtgate_execute_shard(vtgate_port, sql, keyspace, shards, tablet_type='master
   """vtgate_execute_shard uses 'vtctl VtGateExecuteShard' to execute a command.
   """
   args = ['VtGateExecuteShard',
-          '-server', 'localhost:%u' % vtgate_port,
+          '-server', 'localhost:{0:d}'.format(vtgate_port),
           '-keyspace', keyspace,
           '-shards', shards,
           '-tablet_type', tablet_type]
@@ -508,7 +507,7 @@ def vtgate_split_query(vtgate_port, sql, keyspace, split_count, bindvars=None):
   in chunks.
   """
   args = ['VtGateSplitQuery',
-          '-server', 'localhost:%u' % vtgate_port,
+          '-server', 'localhost:{0:d}'.format(vtgate_port),
           '-keyspace', keyspace,
           '-split_count', str(split_count)]
   if bindvars:
@@ -562,7 +561,7 @@ def run_vtctl_vtctl(clargs, log_level='', auto_log=False, expect_fail=False,
       log_level='ERROR'
 
   if log_level:
-    args.append('--stderrthreshold=%s' % log_level)
+    args.append('--stderrthreshold={0!s}'.format(log_level))
 
   if isinstance(clargs, str):
     cmd = " ".join(args) + ' ' + clargs
@@ -623,7 +622,7 @@ def _get_vtworker_cmd(clargs, log_level='', auto_log=False):
     else:
       log_level='ERROR'
   if log_level:
-    args.append('--stderrthreshold=%s' % log_level)
+    args.append('--stderrthreshold={0!s}'.format(log_level))
 
   cmd = args + clargs
   return cmd, port
@@ -631,7 +630,7 @@ def _get_vtworker_cmd(clargs, log_level='', auto_log=False):
 # mysql helpers
 def mysql_query(uid, dbname, query):
   conn = MySQLdb.Connect(user='vt_dba',
-                         unix_socket='%s/vt_%010d/mysql.sock' % (environment.vtdataroot, uid),
+                         unix_socket='{0!s}/vt_{1:010d}/mysql.sock'.format(environment.vtdataroot, uid),
                          db=dbname)
   cursor = conn.cursor()
   cursor.execute(query)
@@ -642,7 +641,7 @@ def mysql_query(uid, dbname, query):
 
 def mysql_write_query(uid, dbname, query):
   conn = MySQLdb.Connect(user='vt_dba',
-                         unix_socket='%s/vt_%010d/mysql.sock' % (environment.vtdataroot, uid),
+                         unix_socket='{0!s}/vt_{1:010d}/mysql.sock'.format(environment.vtdataroot, uid),
                          db=dbname)
   cursor = conn.cursor()
   conn.begin()
@@ -655,9 +654,9 @@ def mysql_write_query(uid, dbname, query):
 
 def check_db_var(uid, name, value):
   conn = MySQLdb.Connect(user='vt_dba',
-                         unix_socket='%s/vt_%010d/mysql.sock' % (environment.vtdataroot, uid))
+                         unix_socket='{0!s}/vt_{1:010d}/mysql.sock'.format(environment.vtdataroot, uid))
   cursor = conn.cursor()
-  cursor.execute("show variables like '%s'" % name)
+  cursor.execute("show variables like '{0!s}'".format(name))
   row = cursor.fetchone()
   if row != (name, value):
     raise TestError('variable not set correctly', name, row)
@@ -683,22 +682,22 @@ def check_srv_keyspace(cell, keyspace, expected, keyspace_id_type='uint64'):
   ks = run_vtctl_json(['GetSrvKeyspace', cell, keyspace])
   result = ""
   for tablet_type in sorted(ks['Partitions'].keys()):
-    result += "Partitions(%s):" % tablet_type
+    result += "Partitions({0!s}):".format(tablet_type)
     partition = ks['Partitions'][tablet_type]
     for shard in partition['ShardReferences']:
-      result = result + " %s-%s" % (shard['KeyRange']['Start'],
+      result = result + " {0!s}-{1!s}".format(shard['KeyRange']['Start'],
                                     shard['KeyRange']['End'])
     result += "\n"
   logging.debug("Cell %s keyspace %s has data:\n%s", cell, keyspace, result)
   if expected != result:
-    raise Exception("Mismatch in srv keyspace for cell %s keyspace %s, expected:\n%s\ngot:\n%s" % (
+    raise Exception("Mismatch in srv keyspace for cell {0!s} keyspace {1!s}, expected:\n{2!s}\ngot:\n{3!s}".format(
                    cell, keyspace, expected, result))
   if 'keyspace_id' != ks.get('ShardingColumnName'):
-    raise Exception("Got wrong ShardingColumnName in SrvKeyspace: %s" %
-                   str(ks))
+    raise Exception("Got wrong ShardingColumnName in SrvKeyspace: {0!s}".format(
+                   str(ks)))
   if keyspace_id_type != ks.get('ShardingColumnType'):
-    raise Exception("Got wrong ShardingColumnType in SrvKeyspace: %s" %
-                   str(ks))
+    raise Exception("Got wrong ShardingColumnType in SrvKeyspace: {0!s}".format(
+                   str(ks)))
 
 def check_shard_query_service(testcase, shard_name, tablet_type, expected_state):
   """Makes assertions about the state of DisableQueryService in the shard record's TabletControlMap."""
@@ -714,7 +713,7 @@ def check_shard_query_service(testcase, shard_name, tablet_type, expected_state)
   testcase.assertEqual(
     query_service_enabled,
     expected_state,
-    'shard %s does not have the correct query service state: got %s but expected %s' % (shard_name, query_service_enabled, expected_state)
+    'shard {0!s} does not have the correct query service state: got {1!s} but expected {2!s}'.format(shard_name, query_service_enabled, expected_state)
   )
 
 def check_shard_query_services(testcase, shard_names, tablet_type, expected_state):
@@ -734,7 +733,7 @@ def check_tablet_query_service(testcase, tablet, serving, tablet_control_disable
     expected_state = 'SERVING'
   else:
     expected_state = 'NOT_SERVING'
-  testcase.assertEqual(tablet_vars['TabletStateName'], expected_state, 'tablet %s is not in the right serving state: got %s expected %s' % (tablet.tablet_alias, tablet_vars['TabletStateName'], expected_state))
+  testcase.assertEqual(tablet_vars['TabletStateName'], expected_state, 'tablet {0!s} is not in the right serving state: got {1!s} expected {2!s}'.format(tablet.tablet_alias, tablet_vars['TabletStateName'], expected_state))
 
   status = tablet.get_status()
   if tablet_control_disabled:
@@ -747,14 +746,14 @@ def check_tablet_query_service(testcase, tablet, serving, tablet_control_disable
                     auto_log=True)
 
     tablet_vars = get_vars(tablet.port)
-    testcase.assertEqual(tablet_vars['TabletStateName'], expected_state, 'tablet %s is not in the right serving state after health check: got %s expected %s' % (tablet.tablet_alias, tablet_vars['TabletStateName'], expected_state))
+    testcase.assertEqual(tablet_vars['TabletStateName'], expected_state, 'tablet {0!s} is not in the right serving state after health check: got {1!s} expected {2!s}'.format(tablet.tablet_alias, tablet_vars['TabletStateName'], expected_state))
 
 def check_tablet_query_services(testcase, tablets, serving, tablet_control_disabled):
   for tablet in tablets:
     check_tablet_query_service(testcase, tablet, serving, tablet_control_disabled)
 
 def get_status(port):
-  return urllib2.urlopen('http://localhost:%u%s' % (port, environment.status_url)).read()
+  return urllib2.urlopen('http://localhost:{0:d}{1!s}'.format(port, environment.status_url)).read()
 
 def curl(url, request=None, data=None, background=False, retry_timeout=0, **kwargs):
   args = [environment.curl_bin, '--silent', '--no-buffer', '--location']
@@ -774,7 +773,7 @@ def curl(url, request=None, data=None, background=False, retry_timeout=0, **kwar
       try:
         return run(args, trap_output=True, **kwargs)
       except TestError as e:
-        retry_timeout = wait_step('cmd: %s, error: %s' % (str(args), str(e)), retry_timeout)
+        retry_timeout = wait_step('cmd: {0!s}, error: {1!s}'.format(str(args), str(e)), retry_timeout)
 
   return run(args, trap_output=True, **kwargs)
 
@@ -794,14 +793,14 @@ class Vtctld(object):
       self.grpc_port = environment.reserve_ports(1)
 
   def dbtopo(self):
-    data = json.load(urllib2.urlopen('http://localhost:%u/dbtopo?format=json' %
-                                     self.port))
+    data = json.load(urllib2.urlopen('http://localhost:{0:d}/dbtopo?format=json'.format(
+                                     self.port)))
     if data["Error"]:
       raise VtctldError(data)
     return data["Topology"]
 
   def serving_graph(self):
-    data = json.load(urllib2.urlopen('http://localhost:%u/serving_graph/test_nj?format=json' % self.port))
+    data = json.load(urllib2.urlopen('http://localhost:{0:d}/serving_graph/test_nj?format=json'.format(self.port)))
     if data['Errors']:
       raise VtctldError(data['Errors'])
     return data["Keyspaces"]
@@ -845,12 +844,12 @@ class Vtctld(object):
     if not vtctld:
       vtctld = self
       vtctld_connection = vtctl_client.connect(
-          protocol, 'localhost:%u' % self.port, 30)
+          protocol, 'localhost:{0:d}'.format(self.port), 30)
 
     return self.proc
 
   def process_args(self):
-    return ['-vtctld_addr', 'http://localhost:%u/' % self.port]
+    return ['-vtctld_addr', 'http://localhost:{0:d}/'.format(self.port)]
 
   def vtctl_client(self, args):
     if options.verbose == 2:
@@ -866,7 +865,7 @@ class Vtctld(object):
     out, err = run(environment.binary_args('vtctlclient') +
                    ['-vtctl_client_protocol',
                     protocols_flavor().vtctl_client_protocol(),
-                    '-server', 'localhost:%u' % port,
+                    '-server', 'localhost:{0:d}'.format(port),
                     '-stderrthreshold', log_level] + args,
                    trap_output=True)
     return out

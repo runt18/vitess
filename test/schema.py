@@ -136,13 +136,12 @@ class TestSchema(unittest.TestCase):
   def _check_tables(self, tablet, expectedCount):
     tables = tablet.mquery(db_name, 'show tables')
     self.assertEqual(len(tables), expectedCount,
-                     'Unexpected table count on %s (not %u): %s' %
-                     (tablet.tablet_alias, expectedCount, str(tables)))
+                     'Unexpected table count on {0!s} (not {1:d}): {2!s}'.format(tablet.tablet_alias, expectedCount, str(tables)))
 
   def _check_db_not_created(self, tablet):
     # Broadly catch all exceptions, since the exception being raised is internal to MySQL.
     # We're strictly checking the error message though, so should be fine.
-    with self.assertRaisesRegexp(Exception, '(1049, "Unknown database \'%s\'")' % db_name):
+    with self.assertRaisesRegexp(Exception, '(1049, "Unknown database \'{0!s}\'")'.format(db_name)):
       tables = tablet.mquery(db_name, 'show tables')
 
   def _apply_schema(self, keyspace, sql):
@@ -165,19 +164,19 @@ class TestSchema(unittest.TestCase):
     return out
 
   def _create_test_table_sql(self, table):
-    return 'CREATE TABLE %s ( \
+    return 'CREATE TABLE {0!s} ( \
             `id` BIGINT(20) not NULL, \
             `msg` varchar(64), \
             PRIMARY KEY (`id`) \
-            ) ENGINE=InnoDB' % table
+            ) ENGINE=InnoDB'.format(table)
 
   def _alter_test_table_sql(self, table, index_column_name):
-    return 'ALTER TABLE %s \
+    return 'ALTER TABLE {0!s} \
             ADD COLUMN new_id bigint(20) NOT NULL AUTO_INCREMENT FIRST, \
             DROP PRIMARY KEY, \
             ADD PRIMARY KEY (new_id), \
-            ADD INDEX idx_column(%s) \
-            ' % (table, index_column_name)
+            ADD INDEX idx_column({1!s}) \
+            '.format(table, index_column_name)
 
   def test_schema_changes(self):
     schema_changes = ';'.join([

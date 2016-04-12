@@ -14,9 +14,9 @@ class BindVarsProxy(object):
     self.bind_vars[name]
     self.accessed_keys.add(name)
     if isinstance(var, (list, set, tuple)):
-      return '::%s' % name
+      return '::{0!s}'.format(name)
 
-    return ':%s' % name
+    return ':{0!s}'.format(name)
 
   def export_bind_vars(self):
     return dict([(k, self.bind_vars[k]) for k in self.accessed_keys])

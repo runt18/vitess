@@ -193,7 +193,7 @@ def setup_tablets():
 def get_connection(user=None, password=None, timeout=10.0):
   global vtgate_port
   conn = None
-  vtgate_addrs = {"vt": ["localhost:%s" % (vtgate_port),]}
+  vtgate_addrs = {"vt": ["localhost:{0!s}".format((vtgate_port)),]}
   conn = conn_class.connect(vtgate_addrs, timeout,
                             user=user, password=password)
   return conn
@@ -212,7 +212,7 @@ def _delete_all(shard_index, table_name):
   # This write is to set up the test with fresh insert
   # and hence performing it directly on the connection.
   vtgate_conn.begin()
-  vtgate_conn._execute("delete from %s" % table_name, {},
+  vtgate_conn._execute("delete from {0!s}".format(table_name), {},
                        KEYSPACE_NAME, 'master',
                        keyranges=[get_keyrange(shard_names[shard_index])])
   vtgate_conn.commit()
@@ -231,7 +231,7 @@ def do_write(count, shard_index):
     cursor.begin()
     cursor.execute(
         "insert into vt_insert_test (msg, keyspace_id) values (%(msg)s, %(keyspace_id)s)",
-        {'msg': 'test %s' % x, 'keyspace_id': keyspace_id})
+        {'msg': 'test {0!s}'.format(x), 'keyspace_id': keyspace_id})
     cursor.commit()
 
 
@@ -255,7 +255,7 @@ class TestVTGateFunctions(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     self.assertNotEqual(vtgate_conn, None)
 
   def test_writes(self):
@@ -272,14 +272,14 @@ class TestVTGateFunctions(unittest.TestCase):
         cursor.begin()
         cursor.execute(
             "insert into vt_insert_test (msg, keyspace_id) values (%(msg)s, %(keyspace_id)s)",
-            {'msg': 'test %s' % x, 'keyspace_id': keyspace_id})
+            {'msg': 'test {0!s}'.format(x), 'keyspace_id': keyspace_id})
         cursor.commit()
       cursor = vtgate_conn.cursor(KEYSPACE_NAME, 'master',
                                   keyranges=[self.keyrange])
       rowcount = cursor.execute("select * from vt_insert_test", {})
       self.assertEqual(rowcount, count, "master fetch works")
     except Exception, e:
-      logging.debug("Write failed with error %s" % str(e))
+      logging.debug("Write failed with error {0!s}".format(str(e)))
       raise
 
   def test_query_routing(self):
@@ -306,7 +306,7 @@ class TestVTGateFunctions(unittest.TestCase):
       rowcount = cursor.execute("select * from vt_insert_test", {})
       self.assertEqual(rowcount, row_counts[0] + row_counts[1])
     except Exception, e:
-      logging.debug("failed with error %s, %s" % (str(e), traceback.print_exc()))
+      logging.debug("failed with error {0!s}, {1!s}".format(str(e), traceback.print_exc()))
       raise
 
   def test_rollback(self):
@@ -323,7 +323,7 @@ class TestVTGateFunctions(unittest.TestCase):
         cursor.begin()
         cursor.execute(
             "insert into vt_insert_test (msg, keyspace_id) values (%(msg)s, %(keyspace_id)s)",
-            {'msg': 'test %s' % x, 'keyspace_id': keyspace_id})
+            {'msg': 'test {0!s}'.format(x), 'keyspace_id': keyspace_id})
         cursor.commit()
 
       vtgate_conn.begin()
@@ -335,11 +335,11 @@ class TestVTGateFunctions(unittest.TestCase):
       cursor = vtgate_conn.cursor(KEYSPACE_NAME, 'master',
                                   keyranges=[self.keyrange])
       rowcount = cursor.execute("select * from vt_insert_test", {})
-      logging.debug("ROLLBACK TEST rowcount %d count %d" % (rowcount, count))
-      self.assertEqual(rowcount, count, "Fetched rows(%d) != inserted rows(%d), rollback didn't work" % (rowcount, count))
+      logging.debug("ROLLBACK TEST rowcount {0:d} count {1:d}".format(rowcount, count))
+      self.assertEqual(rowcount, count, "Fetched rows({0:d}) != inserted rows({1:d}), rollback didn't work".format(rowcount, count))
       do_write(10, self.shard_index)
     except Exception, e:
-      self.fail("Write failed with error %s %s" % (str(e), traceback.print_exc()))
+      self.fail("Write failed with error {0!s} {1!s}".format(str(e), traceback.print_exc()))
 
   def test_execute_entity_ids(self):
     try:
@@ -366,8 +366,7 @@ class TestVTGateFunctions(unittest.TestCase):
                                            'id')
       self.assertEqual(rowcount, count, "entity_ids works")
     except Exception, e:
-      self.fail("Execute entity ids failed with error %s %s" %
-                (str(e),
+      self.fail("Execute entity ids failed with error {0!s} {1!s}".format(str(e),
                  traceback.print_exc()))
 
   def test_batch_read(self):
@@ -384,7 +383,7 @@ class TestVTGateFunctions(unittest.TestCase):
         cursor.begin()
         cursor.execute(
             "insert into vt_insert_test (msg, keyspace_id) values (%(msg)s, %(keyspace_id)s)",
-            {'msg': 'test %s' % x, 'keyspace_id': keyspace_id})
+            {'msg': 'test {0!s}'.format(x), 'keyspace_id': keyspace_id})
         cursor.commit()
       _delete_all(self.shard_index, 'vt_a')
       for x in xrange(count):
@@ -408,7 +407,7 @@ class TestVTGateFunctions(unittest.TestCase):
       self.assertEqual(cursor.rowsets[0][1], count)
       self.assertEqual(cursor.rowsets[1][1], count)
     except Exception, e:
-      self.fail("Write failed with error %s %s" % (str(e),
+      self.fail("Write failed with error {0!s} {1!s}".format(str(e),
                                                    traceback.print_exc()))
 
   def test_batch_write(self):
@@ -423,7 +422,7 @@ class TestVTGateFunctions(unittest.TestCase):
       for x in xrange(count):
         keyspace_id = kid_list[x%len(kid_list)]
         query_list.append("insert into vt_insert_test (msg, keyspace_id) values (%(msg)s, %(keyspace_id)s)")
-        bind_vars_list.append({'msg': 'test %s' % x, 'keyspace_id': keyspace_id})
+        bind_vars_list.append({'msg': 'test {0!s}'.format(x), 'keyspace_id': keyspace_id})
       query_list.append("delete from vt_a")
       bind_vars_list.append({})
       for x in xrange(count):
@@ -446,7 +445,7 @@ class TestVTGateFunctions(unittest.TestCase):
           keyranges=[self.keyrange])
       self.assertEqual(rowcount, count)
     except Exception, e:
-      self.fail("Write failed with error %s" % str(e))
+      self.fail("Write failed with error {0!s}".format(str(e)))
 
   def test_streaming_fetchsubset(self):
     try:
@@ -467,7 +466,7 @@ class TestVTGateFunctions(unittest.TestCase):
       self.assertEqual(rowcount, fetch_size)
       stream_cursor.close()
     except Exception, e:
-      self.fail("Failed with error %s %s" % (str(e), traceback.print_exc()))
+      self.fail("Failed with error {0!s} {1!s}".format(str(e), traceback.print_exc()))
 
   def test_streaming_fetchall(self):
     try:
@@ -486,7 +485,7 @@ class TestVTGateFunctions(unittest.TestCase):
       self.assertEqual(rowcount, count)
       stream_cursor.close()
     except Exception, e:
-      self.fail("Failed with error %s %s" % (str(e), traceback.print_exc()))
+      self.fail("Failed with error {0!s} {1!s}".format(str(e), traceback.print_exc()))
 
   def test_streaming_fetchone(self):
     try:
@@ -502,7 +501,7 @@ class TestVTGateFunctions(unittest.TestCase):
       self.assertTrue(type(rows) == tuple, "Received a valid row")
       stream_cursor.close()
     except Exception, e:
-      self.fail("Failed with error %s %s" % (str(e), traceback.print_exc()))
+      self.fail("Failed with error {0!s} {1!s}".format(str(e), traceback.print_exc()))
 
   def test_streaming_multishards(self):
     try:
@@ -522,7 +521,7 @@ class TestVTGateFunctions(unittest.TestCase):
       self.assertEqual(rowcount, count*2)
       stream_cursor.close()
     except Exception, e:
-      self.fail("Failed with error %s %s" % (str(e), traceback.print_exc()))
+      self.fail("Failed with error {0!s} {1!s}".format(str(e), traceback.print_exc()))
 
   def test_streaming_zero_results(self):
     try:
@@ -543,7 +542,7 @@ class TestVTGateFunctions(unittest.TestCase):
         rowcount +=1
       self.assertEqual(rowcount, 0)
     except Exception, e:
-      self.fail("Failed with error %s %s" % (str(e), traceback.print_exc()))
+      self.fail("Failed with error {0!s} {1!s}".format(str(e), traceback.print_exc()))
 
   def test_interleaving(self):
     tablet_type = "master"
@@ -560,7 +559,7 @@ class TestVTGateFunctions(unittest.TestCase):
         keyspace_id = kid_list[x]
         vtgate_conn._execute(
             "insert into vt_insert_test (msg, keyspace_id) values (%(msg)s, %(keyspace_id)s)",
-            {'msg': 'test %s' % x, 'keyspace_id': keyspace_id},
+            {'msg': 'test {0!s}'.format(x), 'keyspace_id': keyspace_id},
             KEYSPACE_NAME, tablet_type, keyspace_ids=[pack_kid(keyspace_id)])
       vtgate_conn.commit()
       vtgate_conn2 = get_connection()
@@ -590,7 +589,7 @@ class TestVTGateFunctions(unittest.TestCase):
             self.assertEqual(result, (kid_list[i],))
       thd.join()
     except Exception, e:
-      self.fail("Failed with error %s %s" % (str(e), traceback.print_exc()))
+      self.fail("Failed with error {0!s} {1!s}".format(str(e), traceback.print_exc()))
 
   def test_field_types(self):
     try:
@@ -610,8 +609,8 @@ class TestVTGateFunctions(unittest.TestCase):
             "(uint_val, str_val, unicode_val, float_val, keyspace_id) "
             "values (%(uint_val)s, %(str_val)s, %(unicode_val)s, "
             "%(float_val)s, %(keyspace_id)s)",
-            {'uint_val': base_uint + x, 'str_val': 'str_%d' % x,
-             'unicode_val': unicode('str_%d' % x), 'float_val': x*1.2,
+            {'uint_val': base_uint + x, 'str_val': 'str_{0:d}'.format(x),
+             'unicode_val': unicode('str_{0:d}'.format(x)), 'float_val': x*1.2,
              'keyspace_id': keyspace_id})
         cursor.commit()
       cursor = vtgate_conn.cursor(KEYSPACE_NAME, 'master',
@@ -673,7 +672,7 @@ class TestVTGateFunctions(unittest.TestCase):
       # deliberately eliminating the float test since it is flaky due
       # to mysql float precision handling.
     except Exception, e:
-      logging.debug("Write failed with error %s" % str(e))
+      logging.debug("Write failed with error {0!s}".format(str(e)))
       raise
 
 
@@ -726,7 +725,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % (str(e)))
+      self.fail("Connection to vtgate failed with error {0!s}".format((str(e))))
     self.replica_tablet.kill_vttablet()
     self.replica_tablet2.kill_vttablet()
     with self.assertRaises(dbexceptions.DatabaseError):
@@ -742,15 +741,14 @@ class TestFailures(unittest.TestCase):
           KEYSPACE_NAME, 'replica',
           keyranges=[self.keyrange])
     except Exception, e:
-      self.fail("Communication with shard %s replica failed with error %s" %
-                (shard_names[self.shard_index], str(e)))
+      self.fail("Communication with shard {0!s} replica failed with error {1!s}".format(shard_names[self.shard_index], str(e)))
 
   def test_vtgate_restart_read(self):
     global vtgate_server, vtgate_port
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % (str(e)))
+      self.fail("Connection to vtgate failed with error {0!s}".format((str(e))))
     utils.vtgate_kill(vtgate_server)
     with self.assertRaises(dbexceptions.OperationalError):
       vtgate_conn._execute(
@@ -768,7 +766,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % (str(e)))
+      self.fail("Connection to vtgate failed with error {0!s}".format((str(e))))
     stream_cursor = vtgate_conn.cursor(
         KEYSPACE_NAME, 'replica',
         keyranges=[self.keyrange],
@@ -782,15 +780,15 @@ class TestFailures(unittest.TestCase):
     try:
       stream_cursor.execute("select * from vt_insert_test", {})
     except Exception, e:
-      self.fail("Communication with shard0 replica failed with error %s" %
-                str(e))
+      self.fail("Communication with shard0 replica failed with error {0!s}".format(
+                str(e)))
 
   def test_vtgate_restart_stream_execute(self):
     global vtgate_server, vtgate_port
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % (str(e)))
+      self.fail("Connection to vtgate failed with error {0!s}".format((str(e))))
     stream_cursor = vtgate_conn.cursor(
         KEYSPACE_NAME, 'replica',
         keyranges=[self.keyrange],
@@ -807,8 +805,8 @@ class TestFailures(unittest.TestCase):
     try:
       stream_cursor.execute("select * from vt_insert_test", {})
     except Exception, e:
-      self.fail("Communication with shard0 replica failed with error %s" %
-                str(e))
+      self.fail("Communication with shard0 replica failed with error {0!s}".format(
+                str(e)))
 
   # vtgate begin doesn't make any back-end connections to
   # vttablet so the kill and restart shouldn't have any effect.
@@ -816,7 +814,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     self.master_tablet.kill_vttablet()
     vtgate_conn.begin()
     proc = self.tablet_start(self.master_tablet, 'master')
@@ -833,7 +831,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     utils.vtgate_kill(vtgate_server)
     with self.assertRaises(dbexceptions.OperationalError):
       vtgate_conn.begin()
@@ -845,7 +843,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to shard0 master failed with error %s" % str(e))
+      self.fail("Connection to shard0 master failed with error {0!s}".format(str(e)))
     with self.assertRaises(dbexceptions.DatabaseError):
       vtgate_conn.begin()
       self.master_tablet.kill_vttablet()
@@ -873,7 +871,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception as e:
-      self.fail("Connection to shard0 master failed with error %s" % str(e))
+      self.fail("Connection to shard0 master failed with error {0!s}".format(str(e)))
 
     keyspace_id = shard_kid_map[shard_names[self.shard_index]][0]
     cursor = vtgate_conn.cursor(KEYSPACE_NAME, 'master',
@@ -894,7 +892,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to shard0 master failed with error %s" % str(e))
+      self.fail("Connection to shard0 master failed with error {0!s}".format(str(e)))
     vtgate_conn.begin()
     keyspace_id = shard_kid_map[shard_names[
         (self.shard_index+1)%len(shard_names)
@@ -914,7 +912,7 @@ class TestFailures(unittest.TestCase):
         transaction_id = vtgate_conn.session.shard_sessions[0].transaction_id
       self.assertTrue(transaction_id != 0)
     except Exception, e:
-      self.fail("Expected DatabaseError as exception, got %s" % str(e))
+      self.fail("Expected DatabaseError as exception, got {0!s}".format(str(e)))
     finally:
       vtgate_conn.rollback()
 
@@ -924,7 +922,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to shard0 master failed with error %s" % str(e))
+      self.fail("Connection to shard0 master failed with error {0!s}".format(str(e)))
     with self.assertRaises(dbexceptions.OperationalError):
       vtgate_conn.begin()
       utils.vtgate_kill(vtgate_server)
@@ -937,7 +935,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to shard0 master failed with error %s" % str(e))
+      self.fail("Connection to shard0 master failed with error {0!s}".format(str(e)))
     vtgate_conn.begin()
     vtgate_conn._execute(
         "delete from vt_insert_test", {},
@@ -950,7 +948,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection(timeout=3.0)
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     with self.assertRaises(dbexceptions.TimeoutError):
       vtgate_conn._execute(
           "select sleep(4) from dual", {},
@@ -960,7 +958,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection(timeout=3.0)
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     with self.assertRaises(dbexceptions.TimeoutError):
       vtgate_conn._execute(
           "select sleep(4) from dual", {},
@@ -983,7 +981,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     with self.assertRaises(dbexceptions.DatabaseError):
       vtgate_conn.begin()
       vtgate_conn._execute(
@@ -994,7 +992,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     with self.assertRaises(dbexceptions.DatabaseError):
       vtgate_conn.begin()
       vtgate_conn._execute(
@@ -1008,7 +1006,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     utils.wait_procs([self.replica_tablet.shutdown_mysql(),])
     try:
       vtgate_conn._execute(
@@ -1055,7 +1053,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     utils.wait_procs([self.replica_tablet.shutdown_mysql(),])
     utils.wait_procs([self.replica_tablet2.shutdown_mysql(),])
     try:
@@ -1123,7 +1121,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     utils.wait_procs([self.replica_tablet.shutdown_mysql(),])
     # should retry on tablet2 and succeed
     vtgate_conn._execute(
@@ -1189,7 +1187,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     utils.wait_procs([self.replica_tablet.shutdown_mysql(),])
     # should retry on tablet2 and succeed
     tablet2_vars = utils.get_vars(self.replica_tablet2.port)
@@ -1284,7 +1282,7 @@ class TestFailures(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
     keyspace_id = None
 
     count = 1
@@ -1361,7 +1359,7 @@ class TestFailures(unittest.TestCase):
       rt_times.append(async_result.get())
     # The true upper limit is 2 seconds (1s * 2 retries as in utils.py). To account for
     # network latencies and other variances, we keep an upper bound of 3 here.
-    self.assertTrue(max(rt_times) < 3, 'at least one request did not fail-fast; round trip times: %s' % rt_times)
+    self.assertTrue(max(rt_times) < 3, 'at least one request did not fail-fast; round trip times: {0!s}'.format(rt_times))
 
     # Restart tablet and put it back to SERVING state
     utils.wait_procs([self.replica_tablet.start_mysql(),])
@@ -1459,7 +1457,7 @@ def send_long_query(keyspace, tablet_type, keyranges, delay):
   try:
     vtgate_conn = get_connection()
     cursor = vtgate_conn.cursor(keyspace, tablet_type, keyranges=keyranges)
-    query = "select sleep(%s) from dual" % str(delay)
+    query = "select sleep({0!s}) from dual".format(str(delay))
     try:
       cursor.execute(query, {})
     except Exception, e:
@@ -1497,7 +1495,7 @@ class TestExceptionLogging(unittest.TestCase):
     try:
       vtgate_conn = get_connection()
     except Exception, e:
-      self.fail("Connection to vtgate failed with error %s" % str(e))
+      self.fail("Connection to vtgate failed with error {0!s}".format(str(e)))
 
     vtgate_conn.begin()
     vtgate_conn._execute(
@@ -1525,9 +1523,9 @@ class TestExceptionLogging(unittest.TestCase):
       exc_msg = parts[0]
       for kw in DML_KEYWORDS:
         if kw in exc_msg:
-          self.fail("IntegrityError shouldn't contain the query %s" % exc_msg)
+          self.fail("IntegrityError shouldn't contain the query {0!s}".format(exc_msg))
     except Exception as e:
-      self.fail("Expected IntegrityError to be raised, raised %s" % str(e))
+      self.fail("Expected IntegrityError to be raised, raised {0!s}".format(str(e)))
     finally:
       vtgate_conn.rollback()
     # The underlying execute is expected to catch and log the integrity error.
@@ -1577,7 +1575,7 @@ class TestAuthentication(unittest.TestCase):
   def test_challenge_is_used(self):
     vtgate_conn = get_connection(user=self.user, password=self.password)
     challenge = ""
-    proof =  "%s %s" %(self.user, hmac.HMAC(self.password,
+    proof =  "{0!s} {1!s}".format(self.user, hmac.HMAC(self.password,
                                             challenge).hexdigest())
     self.assertRaises(gorpc.AppError, vtgate_conn.client.call,
                       'AuthenticatorCRAMMD5.Authenticate', {"Proof": proof})
@@ -1592,7 +1590,7 @@ class TestAuthentication(unittest.TestCase):
       except gorpc.GoRpcError:
         break
     else:
-      self.fail("Too many requests were allowed (%s)." % (i + 1))
+      self.fail("Too many requests were allowed ({0!s}).".format((i + 1)))
 
 
 if __name__ == '__main__':

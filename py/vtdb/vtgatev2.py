@@ -120,7 +120,7 @@ class VTGateConnection(object):
     self.logger_object = vtdb_logger.get_logger()
 
   def __str__(self):
-    return '<VTGateConnection %s >' % self.addr
+    return '<VTGateConnection {0!s} >'.format(self.addr)
 
   def dial(self):
     try:
@@ -421,14 +421,14 @@ def get_params_for_vtgate_conn(vtgate_addrs, timeout, encrypted=False, user=None
     if encrypted:
       service = 'vts'
     if service not in vtgate_addrs:
-      raise Exception("required vtgate service addrs %s not exist" % service)
+      raise Exception("required vtgate service addrs {0!s} not exist".format(service))
     addrs = vtgate_addrs[service]
     random.shuffle(addrs)
   elif isinstance(vtgate_addrs, list):
     random.shuffle(vtgate_addrs)
     addrs = vtgate_addrs
   else:
-    raise dbexceptions.Error("Wrong type for vtgate addrs %s" % vtgate_addrs)
+    raise dbexceptions.Error("Wrong type for vtgate addrs {0!s}".format(vtgate_addrs))
 
   for addr in addrs:
     vt_params = dict()
@@ -447,7 +447,7 @@ def connect(vtgate_addrs, timeout, encrypted=False, user=None, password=None):
                                               password=password)
 
   if not db_params_list:
-   raise dbexceptions.OperationalError("empty db params list - no db instance available for vtgate_addrs %s" % vtgate_addrs)
+   raise dbexceptions.OperationalError("empty db params list - no db instance available for vtgate_addrs {0!s}".format(vtgate_addrs))
 
   db_exception = None
   host_addr = None

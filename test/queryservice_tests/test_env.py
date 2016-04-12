@@ -51,7 +51,7 @@ class TestEnv(object):
 
   @property
   def address(self):
-    return "localhost:%s" % self.port
+    return "localhost:{0!s}".format(self.port)
 
   def connect(self):
     c = tablet_conn.connect(self.address, '', 'test_keyspace', '0', 2, user='youtube-dev-dedicated', password='vtpass')
@@ -70,7 +70,7 @@ class TestEnv(object):
     return curs
 
   def url(self, path):
-    return "http://localhost:%s/" % (self.port) + path
+    return "http://localhost:{0!s}/".format((self.port)) + path
 
   def http_get(self, path, use_json=True):
     data = urllib2.urlopen(self.url(path)).read()
@@ -244,7 +244,7 @@ class TestEnv(object):
     self.conn = self.connect()
     self.txlogger = utils.curl(self.url('/debug/txlog'), background=True, stdout=open(self.txlog_file, 'w'))
     self.txlog = framework.Tailer(self.txlog_file, flush=self.tablet.flush)
-    self.log = framework.Tailer(os.path.join(environment.vtlogroot, '%s.INFO' % self.env), flush=self.tablet.flush)
+    self.log = framework.Tailer(os.path.join(environment.vtlogroot, '{0!s}.INFO'.format(self.env)), flush=self.tablet.flush)
     self.querylog = Querylog(self)
 
   def tearDown(self):

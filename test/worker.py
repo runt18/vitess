@@ -172,7 +172,7 @@ class TestBaseSplitCloneResiliency(unittest.TestCase):
       tablet.wait_for_vttablet_state(wait_state)
 
     # Reparent to choose an initial master
-    utils.run_vtctl(['InitShardMaster', 'test_keyspace/%s' % shard_name,
+    utils.run_vtctl(['InitShardMaster', 'test_keyspace/{0!s}'.format(shard_name),
                      shard_tablets.master.tablet_alias], auto_log=True)
     utils.run_vtctl(['RebuildKeyspaceGraph', 'test_keyspace'], auto_log=True)
 
@@ -201,15 +201,15 @@ class TestBaseSplitCloneResiliency(unittest.TestCase):
       msg - the value of `msg` column
       keyspace_id - the value of `keyspace_id` column
     """
-    k = "%u" % keyspace_id
+    k = "{0:d}".format(keyspace_id)
     values_str = ''
     for i in xrange(num_values):
       if i != 0:
         values_str += ','
-      values_str += '(%u, "%s", 0x%x)' % (id_offset + i, msg, keyspace_id)
+      values_str += '({0:d}, "{1!s}", 0x{2:x})'.format(id_offset + i, msg, keyspace_id)
     tablet.mquery('vt_test_keyspace', [
         'begin',
-        'insert into worker_test(id, msg, keyspace_id) values%s /* EMD keyspace_id:%s*/' % (values_str, k),
+        'insert into worker_test(id, msg, keyspace_id) values{0!s} /* EMD keyspace_id:{1!s}*/'.format(values_str, k),
         'commit'
         ], write=True)
 
@@ -232,7 +232,7 @@ class TestBaseSplitCloneResiliency(unittest.TestCase):
     for shard_num in xrange(num_shards):
         self._insert_values(tablet,
                             shard_offsets[shard_num] + offset,
-                            'msg-shard-%u' % shard_num,
+                            'msg-shard-{0:d}'.format(shard_num),
                             shard_offsets[shard_num],
                             num_values)
 
@@ -244,7 +244,7 @@ class TestBaseSplitCloneResiliency(unittest.TestCase):
       source_tablet - Tablet instance of the source shard
       destination_tablet - Tablet instance of the destination shard
     """
-    select_query = 'select * from worker_test where msg="msg-shard-%s" order by id asc' % shard_num
+    select_query = 'select * from worker_test where msg="msg-shard-{0!s}" order by id asc'.format(shard_num)
 
     # Make sure all the right rows made it from the source to the destination
     source_rows = source_tablet.mquery('vt_test_keyspace', select_query)
@@ -265,7 +265,7 @@ class TestBaseSplitCloneResiliency(unittest.TestCase):
       source_tablets - ShardTablets instance for the source shard
       destination_tablets - ShardTablets instance for the destination shard
     """
-    logging.debug("Running vtworker SplitDiff for %s" % keyspace_shard)
+    logging.debug("Running vtworker SplitDiff for {0!s}".format(keyspace_shard))
     stdout, stderr = utils.run_vtworker(['-cell', 'test_nj', 'SplitDiff',
       keyspace_shard], auto_log=True)
 
@@ -311,7 +311,7 @@ class TestBaseSplitCloneResiliency(unittest.TestCase):
         tablet.kill_vttablet()
     utils.run_vtctl(['RebuildKeyspaceGraph', 'test_keyspace'], auto_log=True)
     for shard in ['0', '-80', '80-']:
-      utils.run_vtctl(['DeleteShard', 'test_keyspace/%s' % shard], auto_log=True)
+      utils.run_vtctl(['DeleteShard', 'test_keyspace/{0!s}'.format(shard)], auto_log=True)
 
   def verify_successful_worker_copy_with_reparent(self, mysql_down=False):
     """Verifies that vtworker can succesfully copy data for a SplitClone.

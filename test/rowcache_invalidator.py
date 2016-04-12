@@ -92,7 +92,7 @@ def tearDownModule():
 
 class RowCacheInvalidator(unittest.TestCase):
   def setUp(self):
-    self.vtgate_client = zkocc.ZkOccConnection("localhost:%u" % vtgate_port,
+    self.vtgate_client = zkocc.ZkOccConnection("localhost:{0:d}".format(vtgate_port),
                                                "test_nj", 30.0)
     topology.read_topology(self.vtgate_client)
     self.perform_insert(400)
@@ -101,16 +101,16 @@ class RowCacheInvalidator(unittest.TestCase):
     self.perform_delete()
 
   def replica_stats(self):
-    url = "http://localhost:%u/debug/table_stats" % replica_tablet.port
+    url = "http://localhost:{0:d}/debug/table_stats".format(replica_tablet.port)
     return framework.MultiDict(json.load(urllib2.urlopen(url)))
 
   def replica_vars(self):
-    url = "http://localhost:%u/debug/vars" % replica_tablet.port
+    url = "http://localhost:{0:d}/debug/vars".format(replica_tablet.port)
     return framework.MultiDict(json.load(urllib2.urlopen(url)))
 
   def perform_insert(self, count):
     for i in xrange(count):
-      self._exec_vt_txn(["insert into vt_insert_test (msg) values ('test %s')" % i])
+      self._exec_vt_txn(["insert into vt_insert_test (msg) values ('test {0!s}')".format(i)])
 
   def perform_delete(self):
     self._exec_vt_txn(['delete from vt_insert_test',])
@@ -120,15 +120,13 @@ class RowCacheInvalidator(unittest.TestCase):
                                         'vt_test_keyspace',
                                         'show master status')
     replica_tablet.mquery('vt_test_keyspace',
-                          "select MASTER_POS_WAIT('%s', %d)" %
-                          (master_position[0][0], master_position[0][1]), 5)
+                          "select MASTER_POS_WAIT('{0!s}', {1:d})".format(master_position[0][0], master_position[0][1]), 5)
 
   def test_cache_invalidation(self):
     self._wait_for_replica()
     invalidations = self.replica_stats()['Totals']['Invalidations']
     invalidatorStats = self.replica_vars()
-    logging.debug("Invalidations %d InvalidatorStats %s" %
-                  (invalidations,
+    logging.debug("Invalidations {0:d} InvalidatorStats {1!s}".format(invalidations,
                    invalidatorStats['RowcacheInvalidatorPosition']))
     self.assertTrue(invalidations > 0, "Invalidations are not flowing through.")
 
@@ -138,16 +136,16 @@ class RowCacheInvalidator(unittest.TestCase):
                         "Cannot proceed, no rows in vt_insert_test")
     id = int(res[0][0])
     stats_dict = self.replica_stats()['vt_insert_test']
-    logging.debug("vt_insert_test stats %s" % stats_dict)
+    logging.debug("vt_insert_test stats {0!s}".format(stats_dict))
     misses = stats_dict['Misses']
     hits = stats_dict["Hits"]
     conn = replica_tablet.conn()
-    conn._execute("select * from vt_insert_test where id=%d" % (id), {})
+    conn._execute("select * from vt_insert_test where id={0:d}".format((id)), {})
     stats_dict = self.replica_stats()['vt_insert_test']
     self.assertEqual(stats_dict['Misses'] - misses, 1,
                      "This shouldn't have hit the cache")
 
-    conn._execute("select * from vt_insert_test where id=%d" % (id), {})
+    conn._execute("select * from vt_insert_test where id={0:d}".format((id)), {})
     stats_dict = self.replica_stats()['vt_insert_test']
     self.assertEqual(stats_dict['Hits'] - hits, 1,
                      "This should have hit the cache")
@@ -214,19 +212,18 @@ class RowCacheInvalidator(unittest.TestCase):
                                         'vt_test_keyspace',
                                         'show master status')
     replica_tablet.mquery('vt_test_keyspace',
-                          "select MASTER_POS_WAIT('%s', %d)" %
-                          (master_position[0][0], master_position[0][1]), 5)
+                          "select MASTER_POS_WAIT('{0!s}', {1:d})".format(master_position[0][0], master_position[0][1]), 5)
 
     # wait until the slave processed all data
     for timeout in xrange(300):
       time.sleep(0.1)
       inv_count1 = self.replica_stats()['Totals']['Invalidations']
-      logging.debug("Got %u invalidations" % inv_count1)
+      logging.debug("Got {0:d} invalidations".format(inv_count1))
       if inv_count1 == 100:
         break
     inv_count1 = self.replica_stats()['Totals']['Invalidations']
     self.assertEqual(inv_count1, 100,
-                     "Unexpected number of invalidations: %u" % inv_count1)
+                     "Unexpected number of invalidations: {0:d}".format(inv_count1))
 
     # stop replication insert more data, restart replication
     replica_tablet.mquery('vt_test_keyspace', "stop slave")
@@ -237,24 +234,23 @@ class RowCacheInvalidator(unittest.TestCase):
                                         'vt_test_keyspace',
                                         'show master status')
     replica_tablet.mquery('vt_test_keyspace',
-                          "select MASTER_POS_WAIT('%s', %d)" %
-                          (master_position[0][0], master_position[0][1]), 5)
+                          "select MASTER_POS_WAIT('{0!s}', {1:d})".format(master_position[0][0], master_position[0][1]), 5)
 
     # wait until the slave processed all data
     for timeout in xrange(300):
       time.sleep(0.1)
       inv_count2 = self.replica_stats()['Totals']['Invalidations']
-      logging.debug("Got %u invalidations" % inv_count2)
+      logging.debug("Got {0:d} invalidations".format(inv_count2))
       if inv_count2 == 200:
         break
     inv_count2 = self.replica_stats()['Totals']['Invalidations']
-    self.assertEqual(inv_count2, 200, "Unexpected number of invalidations: %u" %
-                     inv_count2)
+    self.assertEqual(inv_count2, 200, "Unexpected number of invalidations: {0:d}".format(
+                     inv_count2))
 
     # check and display some stats
     invalidatorStats = self.replica_vars()
-    logging.debug("invalidatorStats %s" %
-                  invalidatorStats['RowcacheInvalidatorPosition'])
+    logging.debug("invalidatorStats {0!s}".format(
+                  invalidatorStats['RowcacheInvalidatorPosition']))
     self.assertEqual(invalidatorStats["RowcacheInvalidatorState"], "Running",
                      "Row-cache invalidator should be enabled")
 
@@ -268,12 +264,12 @@ class RowCacheInvalidator(unittest.TestCase):
     misses = stats_dict['Misses']
     hits = stats_dict["Hits"]
     conn = replica_tablet.conn()
-    conn._execute("select * from vt_insert_test where id=%d" % (id), {})
+    conn._execute("select * from vt_insert_test where id={0:d}".format((id)), {})
     stats_dict = self.replica_stats()['vt_insert_test']
     self.assertEqual(stats_dict['Misses'] - misses, 1,
                      "This shouldn't have hit the cache")
 
-    conn._execute("select * from vt_insert_test where id=%d" % (id), {})
+    conn._execute("select * from vt_insert_test where id={0:d}".format((id)), {})
     hits2 = self.replica_stats()['vt_insert_test']['Hits']
     self.assertEqual(hits2 - hits, 1, "This should have hit the cache")
     conn.close()
@@ -289,15 +285,15 @@ class RowCacheInvalidator(unittest.TestCase):
     for timeout in xrange(300):
       time.sleep(0.1)
       invStats_after = self.replica_vars()
-      logging.debug("Got state %s" %
-                    invStats_after["RowcacheInvalidatorState"])
+      logging.debug("Got state {0!s}".format(
+                    invStats_after["RowcacheInvalidatorState"]))
       if invStats_after["RowcacheInvalidatorState"] == "Stopped":
         break
 
     # check all data is right
     inv_after = self.replica_stats()['Totals']['Invalidations']
     invStats_after = self.replica_vars()
-    logging.debug("Tablet Replica->Spare\n\tBefore: Invalidations: %d InvalidatorStats %s\n\tAfter: Invalidations: %d InvalidatorStats %s" % (inv_before, invStats_before['RowcacheInvalidatorPosition'], inv_after, invStats_after['RowcacheInvalidatorPosition']))
+    logging.debug("Tablet Replica->Spare\n\tBefore: Invalidations: {0:d} InvalidatorStats {1!s}\n\tAfter: Invalidations: {2:d} InvalidatorStats {3!s}".format(inv_before, invStats_before['RowcacheInvalidatorPosition'], inv_after, invStats_after['RowcacheInvalidatorPosition']))
     self.assertEqual(inv_after, 0,
                      "Row-cache invalid. should be disabled, no invalidations")
     self.assertEqual(invStats_after["RowcacheInvalidatorState"], "Stopped",

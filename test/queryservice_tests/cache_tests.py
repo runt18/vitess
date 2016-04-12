@@ -234,12 +234,12 @@ class TestCache(framework.TestCase):
   def test_cache1_sqls(self):
     error_count = self.env.run_cases(cache_cases1.cases)
     if error_count != 0:
-      self.fail("test_cache1_sqls errors: %d" % error_count)
+      self.fail("test_cache1_sqls errors: {0:d}".format(error_count))
 
   def test_cache2_sqls(self):
     error_count = self.env.run_cases(cache_cases2.cases)
     if error_count != 0:
-      self.fail("test_cache2_sqls errors: %d" % error_count)
+      self.fail("test_cache2_sqls errors: {0:d}".format(error_count))
 
   def _get_vars_table_stats(self, table_stats, table, stats):
     return table_stats[table + "." + stats]

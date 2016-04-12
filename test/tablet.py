@@ -89,9 +89,9 @@ class Tablet(object):
     self.shard = None
 
     # utility variables
-    self.tablet_alias = 'test_%s-%010d' % (self.cell, self.tablet_uid)
+    self.tablet_alias = 'test_{0!s}-{1:010d}'.format(self.cell, self.tablet_uid)
     self.zk_tablet_path = (
-        '/zk/test_%s/vt/tablets/%010d' % (self.cell, self.tablet_uid))
+        '/zk/test_{0!s}/vt/tablets/{1:010d}'.format(self.cell, self.tablet_uid))
 
   def mysqlctl(self, cmd, extra_my_cnf=None, with_ports=False, verbose=False):
     extra_env = {}
@@ -196,7 +196,7 @@ class Tablet(object):
   def assert_table_count(self, dbname, table, n, where=''):
     result = self.mquery(dbname, 'select count(*) from ' + table + ' ' + where)
     if result[0][0] != n:
-      raise utils.TestError('expected %u rows in %s' % (n, table), result)
+      raise utils.TestError('expected {0:d} rows in {1!s}'.format(n, table), result)
 
   def reset_replication(self):
     self.mquery('', mysql_flavor().reset_replication_commands())
@@ -219,16 +219,16 @@ class Tablet(object):
     return False
 
   def drop_db(self, name):
-    self.mquery('', 'drop database if exists %s' % name)
+    self.mquery('', 'drop database if exists {0!s}'.format(name))
     while self.has_db(name):
       logging.debug('%s sleeping while waiting for database drop: %s',
                     self.tablet_alias, name)
       time.sleep(0.3)
-      self.mquery('', 'drop database if exists %s' % name)
+      self.mquery('', 'drop database if exists {0!s}'.format(name))
 
   def create_db(self, name):
     self.drop_db(name)
-    self.mquery('', 'create database %s' % name)
+    self.mquery('', 'create database {0!s}'.format(name))
 
   def clean_dbs(self):
     logging.debug('mysql(%s): removing all databases', self.tablet_uid)
@@ -256,7 +256,7 @@ class Tablet(object):
   def get_db_var(self, name):
     conn, cursor = self.connect()
     try:
-      cursor.execute("show variables like '%s'" % name)
+      cursor.execute("show variables like '{0!s}'".format(name))
       return cursor.fetchone()
     finally:
       conn.close()
@@ -266,9 +266,9 @@ class Tablet(object):
         'UpdateTabletAddrs',
         '-hostname', 'localhost',
         '-ip-addr', '127.0.0.1',
-        '-mysql-port', '%u' % self.mysql_port,
-        '-vt-port', '%u' % self.port,
-        '-vts-port', '%u' % (self.port + 500),
+        '-mysql-port', '{0:d}'.format(self.mysql_port),
+        '-vt-port', '{0:d}'.format(self.port),
+        '-vts-port', '{0:d}'.format((self.port + 500)),
         self.tablet_alias
     ]
     return utils.run_vtctl(args)
@@ -322,18 +322,17 @@ class Tablet(object):
 
   def conn(self, user=None, password=None):
     conn = tablet.TabletConnection(
-        'localhost:%d' % self.port, self.tablet_type, self.keyspace,
+        'localhost:{0:d}'.format(self.port), self.tablet_type, self.keyspace,
         self.shard, 30)
     conn.dial()
     return conn
 
   @property
   def tablet_dir(self):
-    return '%s/vt_%010d' % (environment.vtdataroot, self.tablet_uid)
+    return '{0!s}/vt_{1:010d}'.format(environment.vtdataroot, self.tablet_uid)
 
   def flush(self):
-    utils.curl('http://localhost:%s%s' %
-               (self.port, environment.flush_logs_url),
+    utils.curl('http://localhost:{0!s}{1!s}'.format(self.port, environment.flush_logs_url),
                stderr=utils.devnull, stdout=utils.devnull)
 
   def _start_prog(self, binary, port=None, auth=False, memcache=False,
@@ -344,7 +343,7 @@ class Tablet(object):
                   extra_args=None, extra_env=None):
     environment.prog_compile(binary)
     args = environment.binary_args(binary)
-    args.extend(['-port', '%s' % (port or self.port),
+    args.extend(['-port', '{0!s}'.format((port or self.port)),
                  '-log_dir', environment.vtlogroot])
 
     self._add_dbconfigs(args, repl_extra_flags)
@@ -376,7 +375,7 @@ class Tablet(object):
 
     if cert:
       self.secure_port = environment.reserve_ports(1)
-      args.extend(['-secure-port', '%s' % self.secure_port,
+      args.extend(['-secure-port', '{0!s}'.format(self.secure_port),
                    '-cert', cert,
                    '-key', key])
       if ca_cert:
@@ -389,7 +388,7 @@ class Tablet(object):
       args.extend(extra_args)
 
     args.extend(['-enable-autocommit'])
-    stderr_fd = open(os.path.join(environment.vtlogroot, '%s-%d.stderr' % (binary, self.tablet_uid)), 'w')
+    stderr_fd = open(os.path.join(environment.vtlogroot, '{0!s}-{1:d}.stderr'.format(binary, self.tablet_uid)), 'w')
     # increment count only the first time
     if not self.proc:
       Tablet.tablets_running += 1
@@ -432,7 +431,7 @@ class Tablet(object):
       # this flag is used to specify all the mycnf_ flags, to make
       # sure that code works and can fork actions.
       relay_log_path = os.path.join(self.tablet_dir, 'relay-logs',
-                                    'vt-%010d-relay-bin' % self.tablet_uid)
+                                    'vt-{0:010d}-relay-bin'.format(self.tablet_uid))
       args.extend([
           '-mycnf_server_id', str(self.tablet_uid),
           '-mycnf_data_dir', os.path.join(self.tablet_dir, 'data'),
@@ -450,7 +449,7 @@ class Tablet(object):
                                                      'relay-logs',
                                                      'relay-log.info'),
           '-mycnf_bin_log_path', os.path.join(self.tablet_dir, 'bin-logs',
-                                              'vt-%010d-bin' % self.tablet_uid),
+                                              'vt-{0:010d}-bin'.format(self.tablet_uid)),
           '-mycnf_master_info_file', os.path.join(self.tablet_dir,
                                                   'master.info'),
           '-mycnf_pid_file', os.path.join(self.tablet_dir, 'mysql.pid'),
@@ -558,7 +557,7 @@ class Tablet(object):
                 expected)
           else:
             break
-      timeout = utils.wait_step('waiting for state %s' % expected, timeout,
+      timeout = utils.wait_step('waiting for state {0!s}'.format(expected), timeout,
                                 sleep_time=0.1)
 
   def wait_for_mysqlctl_socket(self, timeout=10.0):
@@ -567,7 +566,7 @@ class Tablet(object):
     while True:
       if os.path.exists(mysql_sock) and os.path.exists(mysqlctl_sock):
         return
-      timeout = utils.wait_step('waiting for mysql and mysqlctl socket files: %s %s' % (mysql_sock, mysqlctl_sock), timeout)
+      timeout = utils.wait_step('waiting for mysql and mysqlctl socket files: {0!s} {1!s}'.format(mysql_sock, mysqlctl_sock), timeout)
 
   def _add_dbconfigs(self, args, repl_extra_flags={}):
     config = dict(self.default_db_config)
@@ -583,7 +582,7 @@ class Tablet(object):
     return utils.get_status(self.port)
 
   def get_healthz(self):
-    return urllib2.urlopen('http://localhost:%u/healthz' % self.port).read()
+    return urllib2.urlopen('http://localhost:{0:d}/healthz'.format(self.port)).read()
 
   def kill_vttablet(self, wait=True):
     logging.debug('killing vttablet: %s, wait: %s', self.tablet_alias, str(wait))
@@ -618,7 +617,7 @@ class Tablet(object):
                           expected)
           else:
             break
-      timeout = utils.wait_step('waiting for binlog server state %s' % expected,
+      timeout = utils.wait_step('waiting for binlog server state {0!s}'.format(expected),
                                 timeout, sleep_time=0.5)
     logging.debug('tablet %s binlog service is in state %s',
                   self.tablet_alias, expected)
@@ -639,7 +638,7 @@ class Tablet(object):
                           s, expected)
           else:
             break
-      timeout = utils.wait_step('waiting for binlog player count %d' % expected,
+      timeout = utils.wait_step('waiting for binlog player count {0:d}'.format(expected),
                                 timeout, sleep_time=0.5)
     logging.debug('tablet %s binlog player has %d players',
                   self.tablet_alias, expected)

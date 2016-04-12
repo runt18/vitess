@@ -23,9 +23,9 @@ class EtcdCluster:
     self.hostname = 'localhost'
     self.client_port = self.port_base
     self.peer_port = self.port_base + 1
-    self.client_addr = '%s:%u' % (self.hostname, self.client_port)
-    self.peer_addr = '%s:%u' % (self.hostname, self.peer_port)
-    self.api_url = 'http://%s/v2' % (self.client_addr)
+    self.client_addr = '{0!s}:{1:d}'.format(self.hostname, self.client_port)
+    self.peer_addr = '{0!s}:{1:d}'.format(self.hostname, self.peer_port)
+    self.api_url = 'http://{0!s}/v2'.format((self.client_addr))
 
     dirname = 'etcd_' + self.name
     self.data_dir = os.path.join(environment.vtdataroot, dirname)
@@ -64,8 +64,7 @@ class EtcdTopoServer(server.TopoServer):
     for cell, cluster in self.clusters.iteritems():
       if cell != 'global':
         utils.curl(
-            '%s/keys/vt/cells/%s' %
-            (self.clusters['global'].api_url, cell), request='PUT',
+            '{0!s}/keys/vt/cells/{1!s}'.format(self.clusters['global'].api_url, cell), request='PUT',
             data='value=http://' + cluster.client_addr)
 
   def teardown(self):

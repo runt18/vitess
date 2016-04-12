@@ -29,7 +29,7 @@ class TestVerticalSplitVTGate(vertical_split.TestVerticalSplit):
     cursor = conn.cursor(keyspace, db_type, keyranges=[keyrange.KeyRange(keyrange_constants.NON_PARTIAL_KEYRANGE)], writable=True)
     for i in xrange(count):
       conn.begin()
-      cursor.execute("insert into %s (id, msg) values(%u, 'value %u')" % (
+      cursor.execute("insert into {0!s} (id, msg) values({1:d}, 'value {2:d}')".format(
           table, self.insert_index, self.insert_index), {})
       conn.commit()
       self.insert_index += 1
@@ -44,23 +44,23 @@ class TestVerticalSplitVTGate(vertical_split.TestVerticalSplit):
     for db_type in servedfrom_db_types:
       for tbl in moved_tables:
         try:
-          rows = conn._execute("select * from %s" % tbl, {}, destination_ks, db_type, keyranges=[keyrange.KeyRange(keyrange_constants.NON_PARTIAL_KEYRANGE)])
-          logging.debug("Select on %s.%s returned %d rows" % (db_type, tbl, len(rows)))
+          rows = conn._execute("select * from {0!s}".format(tbl), {}, destination_ks, db_type, keyranges=[keyrange.KeyRange(keyrange_constants.NON_PARTIAL_KEYRANGE)])
+          logging.debug("Select on {0!s}.{1!s} returned {2:d} rows".format(db_type, tbl, len(rows)))
         except Exception, e:
-          self.fail("Execute failed w/ exception %s" % str(e))
+          self.fail("Execute failed w/ exception {0!s}".format(str(e)))
 
   def _check_stats(self):
     v = utils.get_vars(self.vtgate_port)
-    self.assertEqual(v['VttabletCall']['Histograms']['Execute.source_keyspace.0.replica']['Count'], 2, "unexpected value for VttabletCall(Execute.source_keyspace.0.replica) inside %s" % str(v))
-    self.assertEqual(v['VtgateApi']['Histograms']['ExecuteKeyRanges.destination_keyspace.master']['Count'], 6, "unexpected value for VtgateApi(ExecuteKeyRanges.destination_keyspace.master) inside %s" % str(v))
-    self.assertEqual(len(v['VtgateApiErrorCounts']), 0, "unexpected errors for VtgateApiErrorCounts inside %s" % str(v))
+    self.assertEqual(v['VttabletCall']['Histograms']['Execute.source_keyspace.0.replica']['Count'], 2, "unexpected value for VttabletCall(Execute.source_keyspace.0.replica) inside {0!s}".format(str(v)))
+    self.assertEqual(v['VtgateApi']['Histograms']['ExecuteKeyRanges.destination_keyspace.master']['Count'], 6, "unexpected value for VtgateApi(ExecuteKeyRanges.destination_keyspace.master) inside {0!s}".format(str(v)))
+    self.assertEqual(len(v['VtgateApiErrorCounts']), 0, "unexpected errors for VtgateApiErrorCounts inside {0!s}".format(str(v)))
     self.assertEqual(
             v['ResilientSrvTopoServerEndPointsReturnedCount']['test_nj.source_keyspace.0.master'] /
               v['ResilientSrvTopoServerEndPointQueryCount']['test_nj.source_keyspace.0.master'],
-            1, "unexpected EndPointsReturnedCount inside %s" % str(v))
+            1, "unexpected EndPointsReturnedCount inside {0!s}".format(str(v)))
     self.assertNotIn(
             'test_nj.source_keyspace.0.master', v['ResilientSrvTopoServerEndPointDegradedResultCount'],
-            "unexpected EndPointDegradedResultCount inside %s" % str(v))
+            "unexpected EndPointDegradedResultCount inside {0!s}".format(str(v)))
 
 if __name__ == '__main__':
   vertical_split.client_type = vertical_split.VTGATE

@@ -37,18 +37,18 @@ class ZkTopoServer(server.TopoServer):
     self.assign_ports()
     run(binary_args('zkctl') + [
         '-log_dir', vtlogroot,
-        '-zk.cfg', '1@%s:%s' % (self.hostname, self.zk_ports),
+        '-zk.cfg', '1@{0!s}:{1!s}'.format(self.hostname, self.zk_ports),
         'init'])
     config = tmproot + '/test-zk-client-conf.json'
     with open(config, 'w') as f:
-      ca_server = 'localhost:%u' % (self.zk_client_port)
+      ca_server = 'localhost:{0:d}'.format((self.zk_client_port))
       if add_bad_host:
         ca_server += ',does.not.exists:1234'
       zk_cell_mapping = {
-          'test_nj': 'localhost:%u' % (self.zk_client_port),
-          'test_ny': 'localhost:%u' % (self.zk_client_port),
+          'test_nj': 'localhost:{0:d}'.format((self.zk_client_port)),
+          'test_ny': 'localhost:{0:d}'.format((self.zk_client_port)),
           'test_ca': ca_server,
-          'global': 'localhost:%u' % (self.zk_client_port),
+          'global': 'localhost:{0:d}'.format((self.zk_client_port)),
       }
       json.dump(zk_cell_mapping, f)
     os.environ['ZK_CLIENT_CONFIG'] = config
@@ -64,7 +64,7 @@ class ZkTopoServer(server.TopoServer):
     self.assign_ports()
     run(binary_args('zkctl') + [
         '-log_dir', vtlogroot,
-        '-zk.cfg', '1@%s:%s' % (self.hostname, self.zk_ports),
+        '-zk.cfg', '1@{0!s}:{1!s}'.format(self.hostname, self.zk_ports),
         'shutdown' if utils.options.keep_logs else 'teardown'],
         raise_on_error=False)
 

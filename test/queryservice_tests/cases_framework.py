@@ -45,7 +45,7 @@ class Log(object):
        self.cache_invalidations,
        self.error) = line.strip().split('\t')
     except ValueError:
-      print "Wrong looking line: %r" % line
+      print "Wrong looking line: {0!r}".format(line)
       raise
 
   def check(self, case):
@@ -68,7 +68,7 @@ class Log(object):
     return failures
 
   def fail(self, reason, should, is_):
-    return "FAIL: %s: %r != %r" % (reason, should, is_)
+    return "FAIL: {0!s}: {1!r} != {2!r}".format(reason, should, is_)
 
   def check_original_sql(self, case):
     # The following is necessary because Python and Go use different
@@ -163,7 +163,7 @@ class Case(object):
     if self.result is not None:
       result = list(cursor)
       if self.result != result:
-        failures.append("%r:\n%s !=\n%s" % (self.sql, self.result, result))
+        failures.append("{0!r}:\n{1!s} !=\n{2!s}".format(self.sql, self.result, result))
     for i in range(30):
       lines = env.querylog.tailer.readLines()
       if not lines:
@@ -178,16 +178,16 @@ class Case(object):
     if self.is_testing_cache:
       tdelta = self.table_stats_delta(tstart, env)
       if self.cache_hits is not None and tdelta['Hits'] != self.cache_hits:
-        failures.append("Bad Cache Hits: %s != %s" % (self.cache_hits, tdelta['Hits']))
+        failures.append("Bad Cache Hits: {0!s} != {1!s}".format(self.cache_hits, tdelta['Hits']))
 
       if self.cache_absent is not None and tdelta['Absent'] != self.cache_absent:
-        failures.append("Bad Cache Absent: %s != %s" % (self.cache_absent, tdelta['Absent']))
+        failures.append("Bad Cache Absent: {0!s} != {1!s}".format(self.cache_absent, tdelta['Absent']))
 
       if self.cache_misses is not None and tdelta['Misses'] != self.cache_misses:
-        failures.append("Bad Cache Misses: %s != %s" % (self.cache_misses, tdelta['Misses']))
+        failures.append("Bad Cache Misses: {0!s} != {1!s}".format(self.cache_misses, tdelta['Misses']))
 
       if self.cache_invalidations is not None and tdelta['Invalidations'] != self.cache_invalidations:
-        failures.append("Bad Cache Invalidations: %s != %s" % (self.cache_invalidations, tdelta['Invalidations']))
+        failures.append("Bad Cache Invalidations: {0!s} != {1!s}".format(self.cache_invalidations, tdelta['Invalidations']))
 
     return failures
 
@@ -202,7 +202,7 @@ class Case(object):
     return env.http_get('/debug/table_stats')[self.cache_table]
 
   def __str__(self):
-    return "Case %r" % self.doc
+    return "Case {0!r}".format(self.doc)
 
 
 class MultiCase(object):
@@ -227,4 +227,4 @@ class MultiCase(object):
     return iter(self.sqls_and_cases)
 
   def __str__(self):
-    return "MultiCase: %s" % self.doc
+    return "MultiCase: {0!s}".format(self.doc)

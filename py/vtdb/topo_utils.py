@@ -38,7 +38,7 @@ def get_db_params_for_tablet_conn(topo_client, keyspace_name, shard, db_type, ti
     service = encrypted_service
   else:
     service = 'vt'
-  db_key = "%s.%s.%s:%s" % (keyspace_name, shard, db_type, service)
+  db_key = "{0!s}.{1!s}.{2!s}:{3!s}".format(keyspace_name, shard, db_type, service)
   # This will read the cached keyspace.
   keyspace_object = topology.get_keyspace(keyspace_name)
 
@@ -64,7 +64,7 @@ def get_db_params_for_tablet_conn(topo_client, keyspace_name, shard, db_type, ti
   encrypted_host_port_list = []
   if 'Entries' not in end_points_data:
     vtdb_logger.get_logger().topo_exception('topo server returned: ' + str(end_points_data), db_key, e)
-    raise Exception('zkocc returned: %s' % str(end_points_data))
+    raise Exception('zkocc returned: {0!s}'.format(str(end_points_data)))
   for entry in end_points_data['Entries']:
     if service in entry['NamedPortMap']:
       host_port = (entry['Host'], entry['NamedPortMap'][service],
@@ -83,6 +83,6 @@ def get_db_params_for_tablet_conn(topo_client, keyspace_name, shard, db_type, ti
 
 
   for host, port, encrypted in end_points_list:
-    vt_params = VTConnParams(keyspace_name, shard, db_type, "%s:%s" % (host, port), timeout, encrypted, user, password).__dict__
+    vt_params = VTConnParams(keyspace_name, shard, db_type, "{0!s}:{1!s}".format(host, port), timeout, encrypted, user, password).__dict__
     db_params_list.append(vt_params)
   return db_params_list
