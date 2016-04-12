@@ -39,7 +39,7 @@ class GRPCVtctlClient(vtctl_client.VctlClient):
         self.stub = None
 
     def is_closed(self):
-        return self.stub == None
+        return self.stub is None
 
     def execute_vtctl_command(self, args, action_timeout=30.0,
                               lock_timeout=5.0, info_to_debug=False):

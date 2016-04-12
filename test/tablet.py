@@ -540,7 +540,7 @@ class Tablet(object):
   def wait_for_vtocc_state(self, expected, timeout=60.0, port=None):
     while True:
       v = utils.get_vars(port or self.port)
-      if v == None:
+      if v is None:
         logging.debug(
             '  vttablet %s not answering at /debug/vars, waiting...',
             self.tablet_alias)
@@ -604,7 +604,7 @@ class Tablet(object):
   def wait_for_binlog_server_state(self, expected, timeout=30.0):
     while True:
       v = utils.get_vars(self.port)
-      if v == None:
+      if v is None:
         logging.debug('  vttablet not answering at /debug/vars, waiting...')
       else:
         if 'UpdateStreamState' not in v:
@@ -625,7 +625,7 @@ class Tablet(object):
   def wait_for_binlog_player_count(self, expected, timeout=30.0):
     while True:
       v = utils.get_vars(self.port)
-      if v == None:
+      if v is None:
         logging.debug('  vttablet not answering at /debug/vars, waiting...')
       else:
         if 'BinlogPlayerMapSize' not in v:
