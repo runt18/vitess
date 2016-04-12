@@ -174,7 +174,9 @@ class Tablet(object):
     return conn, MySQLdb.cursors.DictCursor(conn)
 
   # Query the MySQL instance directly
-  def mquery(self, dbname, query, write=False, user='vt_dba', conn_params={}):
+  def mquery(self, dbname, query, write=False, user='vt_dba', conn_params=None):
+    if conn_params is None:
+      conn_params = {}
     conn, cursor = self.connect(dbname, user=user, **conn_params)
     if write:
       conn.begin()
@@ -201,7 +203,9 @@ class Tablet(object):
   def reset_replication(self):
     self.mquery('', mysql_flavor().reset_replication_commands())
 
-  def populate(self, dbname, create_sql, insert_sqls=[]):
+  def populate(self, dbname, create_sql, insert_sqls=None):
+    if insert_sqls is None:
+      insert_sqls = []
     self.create_db(dbname)
     if isinstance(create_sql, basestring):
       create_sql = [create_sql]
@@ -338,9 +342,11 @@ class Tablet(object):
   def _start_prog(self, binary, port=None, auth=False, memcache=False,
                   wait_for_state='SERVING', filecustomrules=None, zkcustomrules=None,
                   schema_override=None, cert=None, key=None, ca_cert=None,
-                  repl_extra_flags={}, table_acl_config=None,
+                  repl_extra_flags=None, table_acl_config=None,
                   lameduck_period=None, security_policy=None,
                   extra_args=None, extra_env=None):
+    if repl_extra_flags is None:
+      repl_extra_flags = {}
     environment.prog_compile(binary)
     args = environment.binary_args(binary)
     args.extend(['-port', '{0!s}'.format((port or self.port)),
@@ -407,7 +413,7 @@ class Tablet(object):
   def start_vttablet(self, port=None, auth=False, memcache=False,
                      wait_for_state='SERVING', filecustomrules=None, zkcustomrules=None,
                      schema_override=None, cert=None, key=None, ca_cert=None,
-                     repl_extra_flags={}, table_acl_config=None,
+                     repl_extra_flags=None, table_acl_config=None,
                      lameduck_period=None, security_policy=None,
                      target_tablet_type=None, full_mycnf_args=False,
                      extra_args=None, extra_env=None, include_mysql_port=True,
@@ -418,6 +424,8 @@ class Tablet(object):
 
     The process is also saved in self.proc, so it's easy to kill as well.
     """
+    if repl_extra_flags is None:
+      repl_extra_flags = {}
     args = []
     args.extend(['-tablet-path', self.tablet_alias])
     args.extend(environment.topo_server().flags())
@@ -502,7 +510,7 @@ class Tablet(object):
   def start_vtocc(self, port=None, auth=False, memcache=False,
                   wait_for_state='SERVING', filecustomrules=None,
                   schema_override=None, cert=None, key=None, ca_cert=None,
-                  repl_extra_flags={}, table_acl_config=None,
+                  repl_extra_flags=None, table_acl_config=None,
                   lameduck_period=None, security_policy=None,
                   keyspace=None, shard=False,
                   extra_args=None):
@@ -510,6 +518,8 @@ class Tablet(object):
 
     The process is also saved in self.proc, so it's easy to kill as well.
     """
+    if repl_extra_flags is None:
+      repl_extra_flags = {}
     self.keyspace = keyspace
     self.shard = shard
     self.dbname = 'vt_' + (self.keyspace or 'database')
@@ -568,7 +578,9 @@ class Tablet(object):
         return
       timeout = utils.wait_step('waiting for mysql and mysqlctl socket files: {0!s} {1!s}'.format(mysql_sock, mysqlctl_sock), timeout)
 
-  def _add_dbconfigs(self, args, repl_extra_flags={}):
+  def _add_dbconfigs(self, args, repl_extra_flags=None):
+    if repl_extra_flags is None:
+      repl_extra_flags = {}
     config = dict(self.default_db_config)
     if self.keyspace:
       config['app']['dbname'] = self.dbname
